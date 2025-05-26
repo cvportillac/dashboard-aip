@@ -1,8 +1,9 @@
 dash==2.14.2
 plotly==5.18.0
 pandas==2.1.4
-geopandas==0.14.1
+geopandas==0.13.2
+fiona==1.8.21
 gunicorn==21.2.0
 shapely==2.0.1
 pyproj==3.6.1
-openpyxl==3.1.2  # Para leer Excel
+openpyxl==3.1.2
