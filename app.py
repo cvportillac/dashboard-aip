@@ -18,15 +18,15 @@ from shapely.geometry import Polygon
 import base64
 
 # 1. Configuración inicial y carga de datos
-shapefile_path = "F:/dashboard-aip/data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
+shapefile_path = "data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
 municipios_gdf = gpd.read_file(shapefile_path)
 
 # Cargar shapefile de ubicaciones AIP
-aip_locations_path = "F:/dashboard-aip/data/shapefiles/cobertura_trabajo_aip.shp"
+aip_locations_path = "data/shapefiles/cobertura_trabajo_aip.shp"
 aip_locations_gdf = gpd.read_file(aip_locations_path)
 
 # Cargar y codificar el logo
-logo_path = "F:/dashboard-aip/assets/logo.png"
+logo_path = "assets/logo.png"
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -46,7 +46,7 @@ municipios_gdf['lon'] = municipios_gdf_projected.centroid.map(lambda p: p.x)
 municipios_gdf['lat'] = municipios_gdf_projected.centroid.map(lambda p: p.y)
 
 def cargar_base_datos():
-    df = pd.read_excel("F:/dashboard-aip/data/proyectos.xlsx")
+    df = pd.read_excel("data/proyectos.xlsx")
     df['Fecha inicio'] = pd.to_datetime(df['Fecha inicio'])
     df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
     df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
@@ -1190,7 +1190,7 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
     buttons = []
     if selected_proyecto:
         for i in [1, 2]:
-            foto_path = f"F:/dashboard-aip/assets/fotos/Rf {i} proyecto {selected_proyecto}.jpg"
+            foto_path = f"assets/fotos/Rf {i} proyecto {selected_proyecto}.jpg"
             if os.path.exists(foto_path):
                 encoded_image = encode_image(foto_path)
                 foto_data.append({
