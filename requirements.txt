@@ -1,8 +1,7 @@
-# requirements.txt
 dash==2.14.2
 plotly==5.18.0
 pandas==2.1.4
-geopandas==0.13.2
+geopandas==0.13.2  # Versión más reciente sin necesidad de Fiona
 gunicorn==21.2.0
 shapely==2.0.1
 pyproj==3.6.1
