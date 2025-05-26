@@ -1,3 +1,0 @@
-data/shapefiles/*.shp filter=lfs diff=lfs merge=lfs -text
-data/shapefiles/*.shx filter=lfs diff=lfs merge=lfs -text
-data/shapefiles/*.dbf filter=lfs diff=lfs merge=lfs -text
