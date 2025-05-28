@@ -25,8 +25,9 @@ municipios_gdf = gpd.read_file(shapefile_path)
 aip_locations_path = "data/shapefiles/cobertura_trabajo_aip.shp"
 aip_locations_gdf = gpd.read_file(aip_locations_path)
 
-# Cargar y codificar el logo
+# Cargar y codificar el logo y la figura de huella
 logo_path = "assets/logo.png"
+huella_path = "assets/Figura_huella_aip.png"
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -34,6 +35,7 @@ def encode_image(image_path):
     return f"data:image/jpeg;base64,{encoded_string}"
 
 logo_encoded = encode_image(logo_path) if os.path.exists(logo_path) else None
+huella_encoded = encode_image(huella_path) if os.path.exists(huella_path) else None
 
 if municipios_gdf.crs != "EPSG:4326":
     municipios_gdf = municipios_gdf.to_crs("EPSG:4326")
@@ -64,55 +66,47 @@ app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_cal
 
 # 2. Esquema de colores mejorado con gamas ordenadas
 colors = {
-    'background': '#e8f5e9',  # Cambiado a un verde claro moderno (antes #1a2f1a)
-    'text': '#333333',  # Cambiado a un gris oscuro para mejor contraste
+    'background': '#e8f5e9',
+    'text': '#333333',
     'primary': '#2e5d2e',
     'secondary': '#4a7c4a',
     'accent': '#8b5a2b',
-    'panel-general': 'rgba(72, 139, 72, 0.8)',  # Verde más claro
-    'panel-especifico': 'rgba(102, 187, 106, 0.8)',  # Verde más claro y moderno
+    'panel-general': 'rgba(72, 139, 72, 0.8)',
+    'panel-especifico': 'rgba(102, 187, 106, 0.8)',
     'panel-municipios': 'rgba(139, 90, 43, 0.8)',
-    'title-color': '#2e7d32',  # Verde más oscuro para títulos
-    'value-color': '#333333',  # Cambiado a gris oscuro
+    'title-color': '#2e7d32',
+    'value-color': '#333333',
     'text-color': '#333333',
-    'card-border': '#a5d6a7',  # Verde claro para bordes
-    'hover-color': '#81c784',  # Verde claro para hover
+    'card-border': '#a5d6a7',
+    'hover-color': '#81c784',
     'selected-color': '#8B0000',
-    'border-color': '#a5d6a7',  # Verde claro para bordes
-    'filter-bg': 'rgba(233, 245, 233, 0.9)',  # Fondo de filtros más claro
+    'border-color': '#a5d6a7',
+    'filter-bg': 'rgba(233, 245, 233, 0.9)',
     'slider-track': '#81c784',
     'slider-handle': '#8b5a2b',
-    
-    # Nuevo color para textos destacados (verde amarillento)
-   'verde-amarillento': '#CDDC39',  # Verde limón - Material Design "Lime 500"
-   'verde-amarillento-oscuro': '#AFB42B',  # Para hover/states
-    
-    # Gama de azules CLAROS ordenados (del más oscuro al más claro):
-    'panel-azul-1': 'rgba(79, 195, 247, 0.8)',   # Azul claro intenso - #4FC3F7
-    'panel-azul-2': 'rgba(129, 212, 250, 0.8)',  # Azul cielo medio - #81D4FA
-    'panel-azul-3': 'rgba(179, 229, 252, 0.8)',  # Azul cielo claro - #B3E5FC
-    'panel-azul-4': 'rgba(207, 239, 253, 0.8)',  # Azul nieve - #CFEFFD
-    
-    
-    # Gama de VER (conservando la progresión original pero más luminosa)
-    'panel-verde-cana-1': 'rgba(100, 120, 60, 0.8)',    # Verde caña oscuro (#64783C)
-    'panel-verde-cana-2': 'rgba(120, 140, 80, 0.8)',    # Verde caña medio (#788C50)
-    'panel-verde-cana-3': 'rgba(140, 160, 95, 0.8)',    # Verde caña (#8CA05F)
-    'panel-verde-cana-4': 'rgba(160, 180, 110, 0.8)',   # Verde caña claro (#A0B46E)
-    'panel-verde-cana-5': 'rgba(180, 200, 130, 0.8)',   # Verde caña luminoso (#B4C882)
-    'panel-verde-cana-6': 'rgba(200, 220, 160, 0.8)',   # Verde caña claro (#DCE8A0)
-    
-    'card-bg': 'rgba(255, 255, 255, 0.9)',  # Fondo de tarjetas blanco
+    'verde-amarillento': '#CDDC39',
+    'verde-amarillento-oscuro': '#AFB42B',
+    'panel-azul-1': 'rgba(79, 195, 247, 0.8)',
+    'panel-azul-2': 'rgba(129, 212, 250, 0.8)',
+    'panel-azul-3': 'rgba(179, 229, 252, 0.8)',
+    'panel-azul-4': 'rgba(207, 239, 253, 0.8)',
+    'panel-verde-cana-1': 'rgba(100, 120, 60, 0.8)',
+    'panel-verde-cana-2': 'rgba(120, 140, 80, 0.8)',
+    'panel-verde-cana-3': 'rgba(140, 160, 95, 0.8)',
+    'panel-verde-cana-4': 'rgba(160, 180, 110, 0.8)',
+    'panel-verde-cana-5': 'rgba(180, 200, 130, 0.8)',
+    'panel-verde-cana-6': 'rgba(200, 220, 160, 0.8)',
+    'card-bg': 'rgba(255, 255, 255, 0.9)',
     'selected-card-bg': '#8B0000',
     'map-highlight': '#8B0000',
-    'positive-accent': '#4caf50',  # Verde más moderno
+    'positive-accent': '#4caf50',
     'negative-accent': '#8b5a2b',
-    'photo-panel': 'rgba(233, 245, 233, 0.9)',  # Fondo más claro
+    'photo-panel': 'rgba(233, 245, 233, 0.9)',
     'modal-bg': 'rgba(0,0,0,0.85)',
     'aip-locations': '#FFA500'
 }
 
-# 3. Estilos optimizados con tamaños de fuente aumentados
+# 3. Estilos optimizados
 styles = {
     'container': {
         'display': 'grid',
@@ -130,11 +124,13 @@ styles = {
         'color': colors['title-color'],
         'marginBottom': '0',
         'fontWeight': '700',
-        'fontSize': '42px',  # Aumentado de 36px
+        'fontSize': '52px',
         'paddingBottom': '15px',
         'textShadow': '2px 2px 4px rgba(0,0,0,0.5)',
         'borderBottom': f'2px solid {colors["title-color"]}',
-        'marginLeft': '20px'
+        'marginLeft': '20px',
+        'display': 'inline-block',
+        'verticalAlign': 'middle'
     },
     'header-container': {
         'gridColumn': '1 / span 2',
@@ -156,13 +152,19 @@ styles = {
         'objectFit': 'contain',
         'maxWidth': '100%'
     },
+    'huella-img': {
+        'height': '150px',
+        'verticalAlign': 'middle',
+        'marginLeft': '15px',
+        'marginBottom': '5px'
+    },
     'section-title': {
         'gridColumn': '1 / span 2',
         'textAlign': 'left',
         'color': colors['title-color'],
         'margin': '15px 0 10px 0',
         'fontWeight': '600',
-        'fontSize': '30px',  # Aumentado de 24px
+        'fontSize': '30px',
         'paddingLeft': '15px',
         'borderLeft': f'4px solid {colors["title-color"]}',
         'backgroundColor': 'rgba(0,0,0,0.2)',
@@ -226,7 +228,7 @@ styles = {
     },
     'municipio-name': {
         'fontWeight': '600',
-        'fontSize': '24px',  # Aumentado de 20px
+        'fontSize': '24px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'color': '#333333',
@@ -234,7 +236,7 @@ styles = {
     },
     'municipio-name-selected': {
         'fontWeight': '600',
-        'fontSize': '26px',  # Aumentado de 22px
+        'fontSize': '26px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'color': 'white',
@@ -242,7 +244,7 @@ styles = {
         'textShadow': '1px 1px 3px rgba(0,0,0,0.7)'
     },
     'municipio-projects': {
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'fontWeight': '600',
         'textAlign': 'center',
         'backgroundColor': '#e6f3ff',
@@ -253,7 +255,7 @@ styles = {
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)'
     },
     'municipio-projects-selected': {
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'fontWeight': '600',
         'textAlign': 'center',
         'backgroundColor': 'rgba(255,255,255,0.3)',
@@ -268,7 +270,7 @@ styles = {
         'textAlign': 'center',
         'color': 'white',
         'fontWeight': '600',
-        'fontSize': '28px',  # Aumentado de 24px
+        'fontSize': '28px',
         'marginBottom': '20px',
         'padding': '12px',
         'borderRadius': '6px',
@@ -303,7 +305,7 @@ styles = {
         'minHeight': '130px'
     },
     'info-title': {
-        'fontSize': '24px',  # Aumentado de 18px
+        'fontSize': '24px',
         'fontWeight': '600',
         'color': colors['title-color'],
         'marginBottom': '12px',
@@ -315,7 +317,7 @@ styles = {
         'textShadow': '1px 1px 2px rgba(0,0,0,0.5)'
     },
     'info-value': {
-        'fontSize': '36px',  # Aumentado de 28px
+        'fontSize': '36px',
         'fontWeight': '600',
         'color': colors['value-color'],
         'margin': 'auto 0',
@@ -327,7 +329,7 @@ styles = {
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
     },
     'info-text': {
-        'fontSize': '30px',  # Aumentado de 24px
+        'fontSize': '30px',
         'fontWeight': '600',
         'color': colors['value-color'],
         'margin': 'auto 0',
@@ -343,14 +345,14 @@ styles = {
         'fontWeight': '600',
         'marginBottom': '10px',
         'color': colors['title-color'],
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'textShadow': '1px 1px 1px rgba(0,0,0,0.3)'
     },
     'dropdown': {
         'width': '100%',
         'borderRadius': '6px',
         'border': f'1px solid {colors["border-color"]}',
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'backgroundColor': 'white',
         'color': '#333333'
     },
@@ -377,14 +379,14 @@ styles = {
         'border': f'2px solid {colors["selected-color"]}'
     },
     'kpi-title': {
-        'fontSize': '26px',  # Aumentado de 20px
+        'fontSize': '26px',
         'marginBottom': '12px',
         'color': colors['title-color'],
         'fontWeight': '600',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)'
     },
     'kpi-value': {
-        'fontSize': '48px',  # Aumentado de 38px
+        'fontSize': '48px',
         'fontWeight': '700',
         'color': colors['value-color'],
         'marginTop': '8px',
@@ -428,7 +430,7 @@ styles = {
         'textAlign': 'center',
         'color': colors['title-color'],
         'fontWeight': '600',
-        'fontSize': '26px',  # Aumentado de 20px
+        'fontSize': '26px',
         'marginBottom': '8px',
         'textTransform': 'uppercase'
     },
@@ -438,7 +440,7 @@ styles = {
         'borderRadius': '6px',
         'backgroundColor': colors['filter-bg'],
         'color': colors['text'],
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'border': f'1px solid {colors["border-color"]}'
     },
     'photo-button-container': {
@@ -457,7 +459,7 @@ styles = {
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
-        'fontSize': '18px',  # Aumentado de 14px
+        'fontSize': '18px',
         'margin': '4px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)',
         'transition': 'all 0.3s ease'
@@ -506,19 +508,19 @@ styles = {
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
-        'fontSize': '18px',  # Aumentado de 14px
+        'fontSize': '18px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)'
     },
     'proyecto-selector-label': {
         'color': colors['text'],
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'fontWeight': '600'
     }
 }
 
-# 4. Layout de la aplicación (sin cambios en la estructura, solo tamaños de fuente aumentados)
+# 4. Layout de la aplicación
 app.layout = html.Div(style={
     'backgroundColor': colors['background'],
     'minHeight': '100vh',
@@ -526,10 +528,20 @@ app.layout = html.Div(style={
     'margin': '0'
 }, children=[
     html.Div(style=styles['container'], children=[
-        # Encabezado con título y logo
+        # Encabezado con título, huella y logo
         html.Div(style=styles['header-container'], children=[
             html.Div(
-                html.H1("NUESTRA HUELLA EN COLOMBIA", style=styles['header']),
+                html.Div([
+                    html.Span("NUESTRA HUELLA EN COLOMBIA ", style=styles['header']),
+                    html.Img(
+                        src=huella_encoded,
+                        style=styles['huella-img']
+                    ) if huella_encoded else html.Div()
+                ], style={
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'flexWrap': 'wrap'
+                }),
             ),
             html.Div(style=styles['logo-container'], children=[
                 html.Img(
@@ -1220,11 +1232,6 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
         buttons,
         foto_data
     ]
-
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-    return f"data:image/jpeg;base64,{encoded_string}"
 
 @app.callback(
     Output('photo-modal', 'style'),
