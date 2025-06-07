@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Dashboard Fundación AIP - Versión Completa y Corregida
+Dashboard Fundación AIP - Versión Mejorada con:
+1. Experiencia móvil optimizada
+2. Barra de navegación visible
+3. Contenido responsive sin cortes
+4. Interacciones táctiles mejoradas
 """
 
 import pandas as pd
@@ -90,35 +94,22 @@ try:
         df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
         df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
         
-        # Normalización de nombres para asegurar coincidencia exacta
-        df['Municipio'] = df['Municipio'].str.strip().str.upper()
-        df['Departamento'] = df['Departamento'].str.strip().str.upper()
+        # Normalizar nombres
+        df['Municipio'] = df['Municipio'].str.upper().str.strip()
+        df['Departamento'] = df['Departamento'].str.upper().str.strip()
+        municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.upper().str.strip()
+        municipios_gdf['Depto'] = municipios_gdf['Depto'].str.upper().str.strip()
         
         return df
 
     df = cargar_base_datos()
 
-    # Procesar nombres en el shapefile para coincidencia exacta
-    municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.strip().str.upper()
-    municipios_gdf['Depto'] = municipios_gdf['Depto'].str.strip().str.upper()
-
-    # Verificación de coincidencias
-    municipios_en_shapefile = set(zip(municipios_gdf['MpNombre'], municipios_gdf['Depto']))
-    municipios_en_proyectos = set(zip(df['Municipio'], df['Departamento']))
-    
-    # Identificar municipios sin coincidencia
-    no_encontrados = municipios_en_proyectos - municipios_en_shapefile
-    if no_encontrados:
-        print(f"Advertencia: {len(no_encontrados)} municipios no encontrados en shapefile:")
-        for mun, depto in sorted(no_encontrados):
-            print(f" - {mun} ({depto})")
-
 except Exception as e:
     print(f"Error cargando datos: {e}")
     # Datos de ejemplo para evitar errores
     df = pd.DataFrame({
-        'Municipio': ['EJEMPLO'],
-        'Departamento': ['EJEMPLO'],
+        'Municipio': ['Ejemplo'],
+        'Departamento': ['Ejemplo'],
         'Tipo de proyecto': ['Ejemplo'],
         'Fecha inicio': [datetime.now()],
         'Fecha fin': [datetime.now()],
@@ -214,6 +205,7 @@ styles = {
         'width': '100%'
     },
     'header-container': {
+        'gridColumn': '1 / span 1',
         'display': 'flex',
         'flexDirection': 'column',
         'gap': '15px',
@@ -246,6 +238,7 @@ styles = {
         'background': 'transparent',
     },
     'section-title': {
+        'gridColumn': '1 / span 1',
         'textAlign': 'left',
         'color': colors['title-color'],
         'margin': '10px 0',
@@ -259,6 +252,7 @@ styles = {
         'width': '100%'
     },
     'filters': {
+        'gridColumn': '1 / span 1',
         'backgroundColor': colors['filter-bg'],
         'padding': '15px',
         'borderRadius': '12px',
@@ -305,8 +299,7 @@ styles = {
         'justifyContent': 'center',
         'minWidth': '0',
         'wordWrap': 'break-word',
-        'width': '100%',
-        'overflow': 'hidden'
+        'width': '100%'
     },
     'municipio-card-selected': {
         'padding': '10px',
@@ -324,8 +317,7 @@ styles = {
         'justifyContent': 'center',
         'minWidth': '0',
         'wordWrap': 'break-word',
-        'width': '100%',
-        'overflow': 'hidden'
+        'width': '100%'
     },
     'municipio-name': {
         'fontWeight': '600',
@@ -335,9 +327,8 @@ styles = {
         'color': '#333333',
         'width': '100%',
         'textOverflow': 'ellipsis',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
+        'whiteSpace': 'nowrap',
+        'overflow': 'hidden'
     },
     'municipio-name-selected': {
         'fontWeight': '600',
@@ -348,9 +339,8 @@ styles = {
         'width': '100%',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.7)',
         'textOverflow': 'ellipsis',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
+        'whiteSpace': 'nowrap',
+        'overflow': 'hidden'
     },
     'municipio-projects': {
         'fontSize': 'clamp(14px, 2.5vw, 16px)',
@@ -362,9 +352,6 @@ styles = {
         'borderRadius': '12px',
         'minWidth': '60px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)',
-        'whiteSpace': 'nowrap',
-        'overflow': 'hidden',
-        'textOverflow': 'ellipsis'
     },
     'municipio-projects-selected': {
         'fontSize': 'clamp(14px, 2.5vw, 16px)',
@@ -377,9 +364,6 @@ styles = {
         'minWidth': '60px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.3)',
         'border': '2px solid white',
-        'whiteSpace': 'nowrap',
-        'overflow': 'hidden',
-        'textOverflow': 'ellipsis'
     },
     'municipios-title': {
         'textAlign': 'center',
@@ -399,6 +383,7 @@ styles = {
         'zIndex': '1'
     },
     'info-panel': {
+        'gridColumn': '1 / span 1',
         'display': 'grid',
         'gridTemplateColumns': 'repeat(auto-fit, minmax(250px, 1fr))',
         'gap': '10px',
@@ -421,8 +406,7 @@ styles = {
         'boxShadow': '0 4px 12px rgba(0,0,0,0.2)',
         'transition': 'all 0.3s ease',
         'minHeight': '100px',
-        'width': '100%',
-        'overflow': 'hidden'
+        'width': '100%'
     },
     'info-title': {
         'fontSize': 'clamp(14px, 2.5vw, 16px)',
@@ -435,9 +419,6 @@ styles = {
         'textTransform': 'uppercase',
         'letterSpacing': '0.5px',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'info-value': {
         'fontSize': 'clamp(18px, 4vw, 24px)',
@@ -450,9 +431,6 @@ styles = {
         'flexDirection': 'column',
         'justifyContent': 'center',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'info-text': {
         'fontSize': 'clamp(16px, 3.5vw, 20px)',
@@ -466,9 +444,6 @@ styles = {
         'justifyContent': 'center',
         'lineHeight': '1.4',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'filter-label': {
         'fontWeight': '600',
@@ -476,9 +451,6 @@ styles = {
         'color': colors['title-color'],
         'fontSize': 'clamp(14px, 3vw, 16px)',
         'textShadow': '1px 1px 1px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'dropdown': {
         'width': '100%',
@@ -490,6 +462,7 @@ styles = {
         'color': '#333333',
     },
     'summary': {
+        'gridColumn': '1 / span 1',
         'backgroundColor': colors['filter-bg'],
         'padding': '10px',
         'borderRadius': '12px',
@@ -510,8 +483,7 @@ styles = {
         'flexDirection': 'column',
         'justifyContent': 'center',
         'border': f'2px solid {colors["selected-color"]}',
-        'width': '100%',
-        'overflow': 'hidden'
+        'width': '100%'
     },
     'kpi-title': {
         'fontSize': 'clamp(16px, 3vw, 18px)',
@@ -519,9 +491,6 @@ styles = {
         'color': colors['title-color'],
         'fontWeight': '600',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'kpi-value': {
         'fontSize': 'clamp(24px, 5vw, 32px)',
@@ -529,11 +498,9 @@ styles = {
         'color': colors['value-color'],
         'marginTop': '8px',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'photo-panel': {
+        'gridColumn': '1 / span 1',
         'display': 'grid',
         'gridTemplateColumns': '1fr',
         'gap': '15px',
@@ -568,9 +535,6 @@ styles = {
         'fontSize': 'clamp(16px, 3vw, 20px)',
         'marginBottom': '8px',
         'textTransform': 'uppercase',
-        'whiteSpace': 'normal',
-        'overflow': 'hidden',
-        'wordBreak': 'break-word'
     },
     'photo-dropdown': {
         'width': '100%',
@@ -603,9 +567,6 @@ styles = {
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)',
         'transition': 'all 0.3s ease',
         'minWidth': '120px',
-        'whiteSpace': 'nowrap',
-        'overflow': 'hidden',
-        'textOverflow': 'ellipsis'
     },
     'modal': {
         'position': 'fixed',
@@ -873,8 +834,7 @@ app.layout = html.Div(style={
                     'gridTemplateColumns': '1fr',
                     'gap': '10px',
                     'padding': '5px',
-                    'width': '100%',
-                    'overflow': 'hidden'
+                    'width': '100%'
                 })
             ])
         ]),
@@ -976,6 +936,7 @@ app.layout = html.Div(style={
         
         # Pie de página
         html.Div(style={
+            'gridColumn': '1 / span 1',
             'textAlign': 'center',
             'color': colors['title-color'],
             'marginTop': '15px',
@@ -1076,7 +1037,6 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
         )
     
-    # Unión con shapefile usando municipio y departamento
     filtered_with_geom = pd.merge(
         filtered,
         municipios_gdf[['MpNombre', 'Depto', 'geometry', 'lon', 'lat']],
@@ -1087,6 +1047,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
     
     filtered_gdf = gpd.GeoDataFrame(filtered_with_geom)
     
+    # Manejo del zoom automático al seleccionar municipio
     if triggered_input == 'selected-municipio' and selected_municipio and current_filtered_data:
         filtered_df = pd.DataFrame(current_filtered_data)
         municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
@@ -1098,8 +1059,8 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             else:
                 # Si no se puede calcular el bbox, centrar en las coordenadas del municipio
                 municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio) & 
-                    (municipios_gdf['Depto'] == departamento)
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not municipio_geom.empty:
                     map_center = {
@@ -1138,7 +1099,6 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             )]
         )
     else:
-        # Crear figura base con los municipios
         fig = px.choropleth_mapbox(
             filtered_with_geometry,
             geojson=filtered_with_geometry.geometry,
@@ -1151,24 +1111,22 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             custom_data=['MpNombre', 'Depto', 'Tipo de proyecto', 'ID']
         )
         
-        # Actualizar el hover template para los polígonos (municipios)
         fig.update_traces(
             hovertemplate="<b>Municipio: %{customdata[0]}</b><br>Departamento: %{customdata[1]}<br>Proyecto: %{customdata[2]}<br>ID: %{customdata[3]}<extra></extra>"
         )
         
-        # Agregar puntos de ubicaciones AIP con información de Municipio y Departamento
         fig.add_trace(
             px.scatter_mapbox(
                 aip_locations_gdf,
                 lat=aip_locations_gdf.geometry.y,
                 lon=aip_locations_gdf.geometry.x,
-                color_discrete_sequence=['#90EE90']  # Verde claro notorio
+                color_discrete_sequence=['#90EE90']
             ).update_traces(
                 marker=dict(size=10, opacity=0.8),
-                name="Cobertura de trabajo AIP",  # Leyenda para los puntos
+                name="Cobertura de trabajo",
                 hovertemplate="<b>Municipio: %{customdata[0]}</b><br>Departamento: %{customdata[1]}<extra></extra>",
                 customdata=aip_locations_gdf[["Municipio", "Departamen"]],
-                showlegend=True  # Asegurar que aparezca en la leyenda
+                showlegend=True
             ).data[0]
         )
         
@@ -1178,8 +1136,8 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             if not municipio_data.empty:
                 departamento = municipio_data.iloc[0]['Departamento']
                 selected_municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio) & 
-                    (municipios_gdf['Depto'] == departamento)
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not selected_municipio_geom.empty:
                     fig.add_trace(
@@ -1194,6 +1152,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                         ).data[0]
                     )
     
+    # Configuración del mapa sin controles de zoom
     fig.update_layout(
         mapbox_style="carto-positron",
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1311,9 +1270,9 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
     if trigger_id == 'mapa.clickData':
         if map_click and 'points' in map_click and map_click['points']:
             point = map_click['points'][0]
-            if 'customdata' in point and len(point['customdata']) == 4:  # Es un polígono
+            if 'customdata' in point and len(point['customdata']) == 4:
                 municipio = point['customdata'][0]
-            else:  # Es un punto de ubicación AIP
+            else:
                 municipio = point['customdata'][0] if 'customdata' in point and point['customdata'] else None
         else:
             default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
