@@ -1,0 +1,11 @@
+dash==2.11.1
+plotly==5.15.0
+geopandas==0.12.2
+gunicorn==20.1.0
+numpy==1.24.4
+pandas==2.0.3
+openpyxl==3.1.2  # ¡Esta es la clave para resolver el error!
+fiona==1.9.4.post1
+pyproj==3.4.1
+shapely==1.8.5.post1
+plotly
