@@ -7,3 +7,4 @@ data/shapefiles/*.dbf filter=lfs diff=lfs merge=lfs -text
 data/shapefiles/*.shx filter=lfs diff=lfs merge=lfs -text
 data/shapefiles/*.prj filter=lfs diff=lfs merge=lfs -text
 data/shapefiles/* filter=lfs diff=lfs merge=lfs -text
+data/shapefiles/dashboard-aip/* filter=lfs diff=lfs merge=lfs -text
