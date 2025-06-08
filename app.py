@@ -819,20 +819,21 @@ def update_municipio_info(selected_municipio, selected_proyecto, filtered_data):
      Input('close-modal', 'n_clicks')],
     [State('photo-store', 'data')]
 )
-def toggle_modal(photo_clicks, close_click, photo_data):
+def toggle_modal(photo_clicks, close_click, foto_data):
     ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
     
-    if not ctx.triggered or not photo_data:
+    if 'close-modal' in ctx.triggered[0]['prop_id']:
         return {'display': 'none'}
     
-    trigger_id = ctx.triggered[0]['prop_id']
-    
-    if 'close-modal' in trigger_id:
-        return {'display': 'none'}
-    elif 'photo-button' in trigger_id:
-        button_id = json.loads(trigger_id.split('.')[0].replace("'", '"'))
+    if foto_data and any(photo_clicks):
+        button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
         photo_num = button_id['index']
-        return {'display': 'block'}
+        
+        for foto in foto_data:
+            if foto['photo_num'] == photo_num:
+                return {'display': 'flex'}
     
     return {'display': 'none'}
 
@@ -841,23 +842,20 @@ def toggle_modal(photo_clicks, close_click, photo_data):
     [Input({'type': 'photo-button', 'index': ALL}, 'n_clicks')],
     [State('photo-store', 'data')]
 )
-def update_modal_image(photo_clicks, photo_data):
+def update_modal_image(photo_clicks, foto_data):
     ctx = callback_context
-    
-    if not ctx.triggered or not photo_data:
+    if not ctx.triggered or not foto_data:
         raise PreventUpdate
     
-    trigger_id = ctx.triggered[0]['prop_id']
+    button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
+    photo_num = button_id['index']
     
-    if 'photo-button' in trigger_id:
-        button_id = json.loads(trigger_id.split('.')[0].replace("'", '"'))
-        photo_num = button_id['index']
-        
-        for photo in photo_data:
-            if photo['photo_num'] == photo_num:
-                return photo['image']
+    for foto in foto_data:
+        if foto['photo_num'] == photo_num:
+            return foto['image']
     
     raise PreventUpdate
 
+# 6. Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)
