@@ -1,13 +1,3 @@
-
-
-2 de 2
-Script funcional Dashboard AIP
-Recibidos
-
-Cristiam Victoriano Portilla Cabrera <cvportillac@unal.edu.co>
-5 jun 2025, 15:58 (hace 2 días)
-para mí
-
 # -*- coding: utf-8 -*-
 """
 Created on Sat May 24 17:12:16 2025
@@ -30,7 +20,7 @@ import base64
 
 os.environ['USE_PYGEOS'] = '0'  # Solo si usas GeoPandas
 
-# 1. Configuración inicial
+# 1. Configuración inicial 
 
 app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_callback_exceptions=True)
 server = app.server  # <-- Línea clave para Railway
@@ -70,13 +60,13 @@ def cargar_base_datos():
     df['Fecha inicio'] = pd.to_datetime(df['Fecha inicio'])
     df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
     df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
-   
+    
     # Normalizar nombres de municipios y departamentos para coincidencia exacta
     df['Municipio'] = df['Municipio'].str.upper().str.strip()
     df['Departamento'] = df['Departamento'].str.upper().str.strip()
     municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.upper().str.strip()
     municipios_gdf['Depto'] = municipios_gdf['Depto'].str.upper().str.strip()
-   
+    
     return df
 
 df = cargar_base_datos()
@@ -568,7 +558,7 @@ app.layout = html.Div(style={
                 ) if logo_encoded else html.Div("Logo no encontrado")
             ])
         ]),
-       
+        
         # Fila 1: Filtros
         html.Div(style=styles['filters'], children=[
             html.Div(style={'display': 'grid', 'gridTemplateColumns': 'repeat(4, 1fr)', 'gap': '15px'}, children=[
@@ -609,7 +599,7 @@ app.layout = html.Div(style={
                         min=0,
                         max=7000,
                         value=[0, 7000],
-                        marks={i: {'label': f"{i}", 'style': {'fontSize': '18px', 'color': colors['text']}}
+                        marks={i: {'label': f"{i}", 'style': {'fontSize': '18px', 'color': colors['text']}} 
                                for i in range(0, 7001, 1000)},
                         step=50,
                         tooltip={
@@ -632,7 +622,7 @@ app.layout = html.Div(style={
                     min=df['Fecha inicio'].dt.year.min(),
                     max=df['Fecha inicio'].dt.year.max(),
                     value=[df['Fecha inicio'].dt.year.min(), df['Fecha inicio'].dt.year.max()],
-                    marks={str(year): {'label': str(year), 'style': {'fontSize': '18px', 'color': colors['text']}}
+                    marks={str(year): {'label': str(year), 'style': {'fontSize': '18px', 'color': colors['text']}} 
                            for year in range(df['Fecha inicio'].dt.year.min(), df['Fecha inicio'].dt.year.max()+1)},
                     step=None,
                     tooltip={
@@ -648,10 +638,10 @@ app.layout = html.Div(style={
                 )
             ])
         ]),
-       
+        
         # Título sección general
         html.Div("INFORMACIÓN GENERAL DE LOS PROYECTOS", style=styles['section-title']),
-       
+        
         # Fila 2: KPIs con gama ordenada de azules
         html.Div(style=styles['summary'], children=[
             html.Div(style={'display': 'grid', 'gridTemplateColumns': 'repeat(4, 1fr)', 'gap': '15px', 'height': '100%'}, children=[
@@ -673,10 +663,10 @@ app.layout = html.Div(style={
                 ])
             ])
         ]),
-       
+        
         # Título sección específica
         html.Div("INFORMACIÓN ESPECÍFICA DE LOS PROYECTOS POR MUNICIPIO", style=styles['section-title']),
-       
+        
         # Fila 3: Mapa y Lista de Municipios
         html.Div(style=styles['map-container'], children=[
             html.Div(id='map-title', children=[
@@ -691,7 +681,7 @@ app.layout = html.Div(style={
                 'borderRadius': '12px 12px 0 0'
             }),
             dcc.Graph(
-                id='mapa',
+                id='mapa', 
                 config={'displayModeBar': False},
                 style={'height': '540px'},
                 clickData=None
@@ -701,7 +691,7 @@ app.layout = html.Div(style={
             html.Div(id='arrow-3', style=styles['arrow']),
             html.Div(id='arrow-4', style=styles['arrow'])
         ]),
-       
+        
         html.Div(style=styles['municipios-list'], children=[
             html.Div("MUNICIPIOS CON PROYECTOS", style=styles['municipios-title']),
             html.Div(id='municipios-cards-container', style={
@@ -711,12 +701,12 @@ app.layout = html.Div(style={
                 'padding': '8px',
             })
         ]),
-       
+        
         # Fila 4: Panel de información con gama ordenada de café
         html.Div(style=styles['info-panel'], children=[
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                            'backgroundColor': colors['panel-verde-cana-1'],
-                           'border': f'2px solid {colors["map-highlight"]}'},
+                           'border': f'2px solid {colors["map-highlight"]}'}, 
                 children=[
                     html.Div("📍 MUNICIPIO SELECCIONADO", style=styles['info-title'], ),
                     html.Div(id='municipio-value', style={
@@ -725,9 +715,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                           'backgroundColor': colors['panel-verde-cana-2'],
-                          'border':  f'2px solid #00CED1'},
+                          'border':  f'2px solid #00CED1'}, 
                 children=[
                    html.Div("🏦 ENTIDAD FINANCIADORA", style=styles['info-title']),
                    html.Div(id='financiador-value', style={
@@ -735,9 +725,9 @@ app.layout = html.Div(style={
                        'fontSize': '32px'
                    })
             ]),
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                           'backgroundColor': colors['panel-verde-cana-3'],
-                          'border': f'2px solid #00CED1'},
+                          'border': f'2px solid #00CED1'}, 
                 children=[
                     html.Div("⏳ DURACIÓN (MESES)", style=styles['info-title']),
                     html.Div(id='duracion-value', style={
@@ -745,9 +735,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                           'backgroundColor': colors['panel-verde-cana-4'],
-                          'border':  f'2px solid #00CED1'},
+                          'border':  f'2px solid #00CED1'}, 
                 children=[
                     html.Div("👥 CANTIDAD BENEFICIARIOS", style=styles['info-title']),
                     html.Div(id='beneficiarios-value', style={
@@ -755,9 +745,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                           'backgroundColor': colors['panel-verde-cana-5'],
-                          'border':  f'2px solid #00CED1'},
+                          'border':  f'2px solid #00CED1'}, 
                 children=[
                     html.Div("🌳 HECTÁREAS INTERVENIDAS", style=styles['info-title']),
                     html.Div(id='area-value', style={
@@ -765,9 +755,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'],
+            html.Div(style={**styles['info-section-specific'], 
                           'backgroundColor': colors['panel-verde-cana-6'],
-                          'border':  f'2px solid #00CED1'},
+                          'border':  f'2px solid #00CED1'}, 
                 children=[
                     html.Div("📦 PRODUCTO PRINCIPAL", style=styles['info-title']),
                     html.Div(id='producto-value', style={
@@ -777,7 +767,7 @@ app.layout = html.Div(style={
                     })
             ])
         ]),
-       
+        
         # Panel para visualización de fotografías
         html.Div(style=styles['photo-panel'], children=[
             # Sección izquierda - Selector de proyectos
@@ -795,14 +785,14 @@ app.layout = html.Div(style={
                     }
                 )
             ]),
-           
+            
             # Sección derecha - Fotografías
             html.Div(style=styles['photo-content'], children=[
                 html.Div("EVIDENCIA FOTOGRÁFICA INICIAL Y FINAL DEL PROYECTO", style=styles['photo-title']),
                 html.Div(id='photo-buttons', style=styles['photo-button-container'])
             ])
         ]),
-       
+        
         # Modal para mostrar las fotografías
         html.Div(id='photo-modal', style={'display': 'none'}, children=[
             html.Div(style=styles['modal'], children=[
@@ -812,7 +802,7 @@ app.layout = html.Div(style={
                 ])
             ])
         ]),
-       
+        
         # Pie de página
         html.Div(style={
             'gridColumn': '1 / span 2',
@@ -826,7 +816,7 @@ app.layout = html.Div(style={
             html.P("© 2025 Fundación AIP - Todos los derechos reservados"),
             html.P("Datos actualizados al " + datetime.now().strftime("%d/%m/%Y"))
         ]),
-       
+        
         # Almacenamiento
         dcc.Store(id='filtered-data', data=None),
         dcc.Store(id='selected-municipio', data=None),
@@ -837,11 +827,11 @@ app.layout = html.Div(style={
 
 # 5. Funciones de callback (sin cambios)
 def get_municipio_bbox(municipio_name, departamento_name):
-    municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) &
+    municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) & 
                               (municipios_gdf['Depto'] == departamento_name.upper().strip())]
     if municipio.empty:
         return None
-   
+    
     bounds = municipio.geometry.bounds
     minx, miny, maxx, maxy = bounds.iloc[0]
     padding = 0.1
@@ -854,7 +844,7 @@ def get_municipio_bbox(municipio_name, departamento_name):
     width = maxx - minx
     height = maxy - miny
     zoom = 8 - max(width, height) * 5
-   
+    
     return {
         'lat': center_lat,
         'lon': center_lon,
@@ -893,21 +883,21 @@ def update_map_title(selected_municipio):
 def update_filtered_data(tipos, departamentos, comunidades, anos, costos, selected_municipio, current_map_center, current_filtered_data):
     ctx = callback_context
     triggered_input = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
-   
+    
     filtered = df[
-        (df['Fecha inicio'].dt.year >= anos[0]) &
+        (df['Fecha inicio'].dt.year >= anos[0]) & 
         (df['Fecha inicio'].dt.year <= anos[1]) &
         (df['Costo total ($COP)'] >= costos[0]*1000000) &
         (df['Costo total ($COP)'] <= costos[1]*1000000)
     ]
-   
+    
     if tipos:
         filtered = filtered[filtered['Tipo de proyecto'].isin(tipos)]
     if departamentos:
         filtered = filtered[filtered['Departamento'].isin(departamentos)]
     if comunidades:
         filtered = filtered[filtered['Comunidad beneficiaria'].isin(comunidades)]
-   
+    
     if filtered.empty:
         fig = px.choropleth_mapbox(
             title="No hay datos que coincidan con los filtros aplicados",
@@ -929,7 +919,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                 font=dict(size=20)
             )]
         )
-       
+        
         return (
             [],
             "0",
@@ -939,7 +929,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             fig,
             {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
         )
-   
+    
     filtered_with_geom = pd.merge(
         filtered,
         municipios_gdf[['MpNombre', 'Depto', 'geometry', 'lon', 'lat']],
@@ -947,9 +937,9 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         right_on=['MpNombre', 'Depto'],
         how='left'
     )
-   
+    
     filtered_gdf = gpd.GeoDataFrame(filtered_with_geom)
-   
+    
     if triggered_input == 'selected-municipio' and selected_municipio and current_filtered_data:
         filtered_df = pd.DataFrame(current_filtered_data)
         municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
@@ -964,9 +954,9 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             map_center = current_map_center
     else:
         map_center = current_map_center if current_map_center else {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
-   
+    
     filtered_with_geometry = filtered_gdf[~filtered_gdf.geometry.isna()]
-   
+    
     if filtered_with_geometry.empty:
         fig = px.choropleth_mapbox(
             title="No hay datos geográficos para los filtros aplicados",
@@ -1001,12 +991,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             opacity=0.8,
             custom_data=['MpNombre', 'Depto', 'Tipo de proyecto', 'ID']
         )
-       
+        
         # Actualizar el hover template para los polígonos (municipios)
         fig.update_traces(
             hovertemplate="<b>Municipio: %{customdata[0]}</b><br>Departamento: %{customdata[1]}<br>Proyecto: %{customdata[2]}<br>ID: %{customdata[3]}<extra></extra>"
         )
-       
+        
         # Agregar puntos de ubicaciones AIP con información de Municipio y Departamento
         fig.add_trace(
             px.scatter_mapbox(
@@ -1022,14 +1012,14 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                 showlegend=True  # Asegurar que aparezca en la leyenda
             ).data[0]
         )
-       
+        
         if selected_municipio and current_filtered_data:
             filtered_df = pd.DataFrame(current_filtered_data)
             municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
             if not municipio_data.empty:
                 departamento = municipio_data.iloc[0]['Departamento']
                 selected_municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) &
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
                     (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not selected_municipio_geom.empty:
@@ -1044,7 +1034,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                             hoverinfo='skip'
                         ).data[0]
                     )
-   
+    
     fig.update_layout(
         mapbox_style="carto-positron",
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1060,12 +1050,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         paper_bgcolor='rgba(0,0,0,0)',
         clickmode='event+select'
     )
-   
+    
     total_proyectos = len(filtered)
     total_inversion = f"${filtered['Costo total ($COP)'].sum()/1000000:,.0f}M"
     total_beneficiarios = f"{filtered['Beneficiarios totales'].sum():,}"
     total_area = f"{filtered['Área intervenida (ha)'].sum():,.1f} ha"
-   
+    
     return (
         filtered.to_dict('records'),
         total_proyectos,
@@ -1084,26 +1074,26 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
 def update_municipios_list(filtered_data, selected_municipio):
     if not filtered_data:
         return html.Div("No hay municipios con los filtros actuales", style={
-            'textAlign': 'center',
-            'color': 'white',
+            'textAlign': 'center', 
+            'color': 'white', 
             'fontSize': '22px',
             'padding': '15px',
             'backgroundColor': 'rgba(0,0,0,0.2)',
             'borderRadius': '8px'
         })
-   
+    
     filtered_df = pd.DataFrame(filtered_data)
     municipios = filtered_df['Municipio'].unique()
-   
+    
     cards = []
     for municipio in sorted(municipios):
         count = len(filtered_df[filtered_df['Municipio'] == municipio])
         is_selected = municipio == selected_municipio
-       
+        
         card_style = styles['municipio-card-selected'] if is_selected else styles['municipio-card']
         name_style = styles['municipio-name-selected'] if is_selected else styles['municipio-name']
         count_style = styles['municipio-projects-selected'] if is_selected else styles['municipio-projects']
-       
+        
         cards.append(
             html.Div(
                 [
@@ -1115,10 +1105,10 @@ def update_municipios_list(filtered_data, selected_municipio):
                 n_clicks=0
             )
         )
-   
+    
     return cards if cards else html.Div("No hay municipios con los filtros actuales", style={
-        'textAlign': 'center',
-        'color': 'white',
+        'textAlign': 'center', 
+        'color': 'white', 
         'fontSize': '22px',
         'padding': '15px',
         'backgroundColor': 'rgba(0,0,0,0.2)',
@@ -1148,17 +1138,17 @@ def update_municipios_list(filtered_data, selected_municipio):
 )
 def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_data, municipio_ids, municipios_cards):
     ctx = callback_context
-   
+    
     if not ctx.triggered or not filtered_data:
         default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
         return [
-            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
+            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
             default_styles,
             [], None, [], None
         ]
-   
+    
     trigger_id = ctx.triggered[0]['prop_id']
-   
+    
     if trigger_id == 'mapa.clickData':
         if map_click and 'points' in map_click and map_click['points']:
             point = map_click['points'][0]
@@ -1169,7 +1159,7 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
         else:
             default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
             return [
-                None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
+                None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
                 default_styles,
                 [], None, [], None
             ]
@@ -1182,40 +1172,40 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
             raise PreventUpdate
     else:
         municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
-   
+    
     filtered_df = pd.DataFrame(filtered_data)
     municipio_data = filtered_df[filtered_df['Municipio'] == municipio]
-   
+    
     if trigger_id == 'proyecto-selector.value' and selected_proyecto:
         proyecto_data = municipio_data[municipio_data['ID'] == selected_proyecto].iloc[0]
     else:
         proyecto_data = municipio_data.iloc[0] if not municipio_data.empty else None
         selected_proyecto = proyecto_data['ID'] if proyecto_data is not None else None
-   
+    
     if proyecto_data is None:
         default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
         return [
-            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
+            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
             default_styles,
             [], None, [], None
         ]
-   
+    
     beneficiarios = proyecto_data['Beneficiarios totales']
     financiador = proyecto_data['Entidad financiadora']
     duracion = f"{proyecto_data['Duración del proyecto (meses)']:.1f}"
     area = f"{proyecto_data['Área intervenida (ha)']:,.1f}"
     producto = proyecto_data['Producto principal generado']
-   
+    
     card_styles = []
     for m_id in municipio_ids:
         if m_id['index'] == municipio:
             card_styles.append(styles['municipio-card-selected'])
         else:
             card_styles.append(styles['municipio-card'])
-   
-    proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']}
+    
+    proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']} 
                         for _, row in municipio_data.iterrows()]
-   
+    
     foto_data = []
     buttons = []
     if selected_proyecto:
@@ -1235,15 +1225,15 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
                         style=styles['photo-button']
                     )
                 )
-   
+    
     return [
-        municipio,
-        municipio,
-        f"{beneficiarios:,}",
-        financiador,
-        duracion,
-        area,
-        producto,
+        municipio, 
+        municipio, 
+        f"{beneficiarios:,}", 
+        financiador, 
+        duracion, 
+        area, 
+        producto, 
         card_styles,
         proyectos_options,
         selected_proyecto,
@@ -1262,20 +1252,20 @@ def toggle_modal(photo_clicks, close_click, foto_data):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
-   
+    
     trigger_id = ctx.triggered[0]['prop_id']
-   
+    
     if 'close-modal' in trigger_id:
         return {'display': 'none'}
-   
+    
     if foto_data and any(photo_clicks):
         button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
         photo_num = button_id['index']
-       
+        
         for foto in foto_data:
             if foto['photo_num'] == photo_num:
                 return {'display': 'flex'}
-   
+    
     return {'display': 'none'}
 
 @app.callback(
@@ -1288,14 +1278,14 @@ def update_modal_image(photo_clicks, foto_data):
     ctx = callback_context
     if not ctx.triggered or not foto_data:
         raise PreventUpdate
-   
+    
     button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
     photo_num = button_id['index']
-   
+    
     for foto in foto_data:
         if foto['photo_num'] == photo_num:
             return foto['image']
-   
+    
     raise PreventUpdate
 
 # 6. Ejecutar la aplicación
