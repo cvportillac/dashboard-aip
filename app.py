@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Dashboard móvil para Fundación AIP - Versión optimizada para dispositivos móviles
+Dashboard móvil para Fundación AIP con resaltado automático de municipios y estilo dorado
 """
 
 import pandas as pd
@@ -63,26 +63,56 @@ def cargar_base_datos():
 
 df = cargar_base_datos()
 
-# 2. Esquema de colores optimizado para móvil
+# Función para obtener el bbox de un municipio
+def get_municipio_bbox(municipio_name, departamento_name):
+    municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) & 
+                              (municipios_gdf['Depto'] == departamento_name.upper().strip())]
+    if municipio.empty:
+        return None
+    
+    bounds = municipio.geometry.bounds
+    minx, miny, maxx, maxy = bounds.iloc[0]
+    padding = 0.1  # Ajuste para que el municipio no quede pegado a los bordes
+    minx -= padding
+    miny -= padding
+    maxx += padding
+    maxy += padding
+    
+    # Calcular centro y zoom
+    center_lon = (minx + maxx) / 2
+    center_lat = (miny + maxy) / 2
+    width = maxx - minx
+    height = maxy - miny
+    
+    # Fórmula empírica para calcular un zoom adecuado
+    zoom = 8 - max(width, height) * 5
+    
+    return {
+        'lat': center_lat,
+        'lon': center_lon,
+        'zoom': max(zoom, 10)  # Zoom mínimo de 10 para buena visualización
+    }
+
+# 2. Esquema de colores optimizado para móvil con dorado
 colors = {
     'background': '#f5f5f5',
     'text': '#333333',
     'primary': '#2e5d2e',
     'secondary': '#4a7c4a',
     'accent': '#8b5a2b',
+    'gold': '#D4AF37',  # Color dorado para títulos
     'panel-general': 'rgba(72, 139, 72, 0.8)',
     'panel-especifico': 'rgba(102, 187, 106, 0.8)',
     'panel-municipios': 'rgba(139, 90, 43, 0.8)',
     'title-color': '#2e7d32',
-    'gold': '#D4AF37',  # Color dorado para títulos
     'card-bg': 'rgba(255, 255, 255, 0.95)',
     'selected-card-bg': '#8B0000',
-    'map-highlight': '#FFD700',  # Dorado para resaltar polígonos
+    'map-highlight': '#8B0000',
     'aip-locations': '#FFA500',
     'filter-bg': 'rgba(233, 245, 233, 0.9)'
 }
 
-# 3. Estilos optimizados para móvil
+# 3. Estilos optimizados para móvil con títulos dorados
 styles = {
     'container': {
         'width': '100%',
@@ -93,12 +123,13 @@ styles = {
     },
     'header': {
         'textAlign': 'center',
-        'color': colors['title-color'],
+        'color': colors['gold'],  # Título principal en dorado
         'marginBottom': '10px',
         'fontWeight': '700',
         'fontSize': '24px',
         'paddingBottom': '10px',
-        'borderBottom': f'2px solid {colors["title-color"]}'
+        'borderBottom': f'2px solid {colors["gold"]}',  # Borde dorado
+        'textShadow': '1px 1px 2px rgba(0,0,0,0.3)'
     },
     'header-container': {
         'display': 'flex',
@@ -117,26 +148,28 @@ styles = {
     },
     'section-title': {
         'textAlign': 'left',
-        'color': colors['gold'],  # Títulos dorados
+        'color': colors['gold'],  # Títulos de sección en dorado
         'margin': '10px 0',
         'fontWeight': '600',
         'fontSize': '18px',
         'paddingLeft': '10px',
-        'borderLeft': f'3px solid {colors["gold"]}',
-        'textShadow': '0px 1px 1px rgba(0,0,0,0.2)'
+        'borderLeft': f'3px solid {colors["gold"]}',  # Borde lateral dorado
+        'textShadow': '1px 1px 1px rgba(0,0,0,0.2)'
     },
     'filters': {
         'backgroundColor': colors['filter-bg'],
         'padding': '10px',
         'borderRadius': '8px',
         'marginBottom': '10px',
-        'boxShadow': '0 2px 6px rgba(0,0,0,0.1)'
+        'boxShadow': '0 2px 6px rgba(0,0,0,0.1)',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'map-container': {
         'height': '400px',
         'marginBottom': '10px',
         'boxShadow': '0 2px 6px rgba(0,0,0,0.1)',
-        'borderRadius': '8px'
+        'borderRadius': '8px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'municipios-list': {
         'height': '300px',
@@ -144,7 +177,8 @@ styles = {
         'padding': '10px',
         'backgroundColor': colors['panel-municipios'],
         'borderRadius': '8px',
-        'marginBottom': '10px'
+        'marginBottom': '10px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'municipio-card': {
         'padding': '10px',
@@ -155,7 +189,7 @@ styles = {
         'display': 'flex',
         'flexDirection': 'column',
         'alignItems': 'center',
-        'transition': 'all 0.3s ease'
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'municipio-card-selected': {
         'padding': '10px',
@@ -167,21 +201,23 @@ styles = {
         'display': 'flex',
         'flexDirection': 'column',
         'alignItems': 'center',
-        'transform': 'scale(1.02)',
-        'boxShadow': f'0 0 8px {colors["gold"]}'
+        'border': f'2px solid {colors["gold"]}',  # Borde dorado más grueso
+        'boxShadow': f'0 0 8px {colors["gold"]}'  # Sombra dorada
     },
     'municipio-name': {
         'fontWeight': '600',
         'fontSize': '16px',
         'marginBottom': '5px',
-        'textAlign': 'center'
+        'textAlign': 'center',
+        'color': colors['gold']  # Nombre en dorado
     },
     'municipio-name-selected': {
         'fontWeight': '600',
         'fontSize': '16px',
         'marginBottom': '5px',
         'textAlign': 'center',
-        'color': 'white'
+        'color': 'white',
+        'textShadow': f'0 0 3px {colors["gold"]}'  # Efecto dorado
     },
     'municipio-projects': {
         'fontSize': '14px',
@@ -190,7 +226,8 @@ styles = {
         'backgroundColor': '#e6f3ff',
         'color': colors['panel-municipios'],
         'padding': '4px 8px',
-        'borderRadius': '12px'
+        'borderRadius': '12px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'municipio-projects-selected': {
         'fontSize': '14px',
@@ -199,16 +236,19 @@ styles = {
         'backgroundColor': 'rgba(255,255,255,0.3)',
         'color': 'white',
         'padding': '4px 8px',
-        'borderRadius': '12px'
+        'borderRadius': '12px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'municipios-title': {
         'textAlign': 'center',
-        'color': 'white',
+        'color': colors['gold'],  # Título en dorado
         'fontWeight': '600',
         'fontSize': '16px',
         'marginBottom': '10px',
         'padding': '8px',
-        'borderBottom': f'2px solid {colors["gold"]}'
+        'backgroundColor': 'rgba(0,0,0,0.5)',
+        'borderRadius': '8px',
+        'borderBottom': f'2px solid {colors["gold"]}'  # Borde inferior dorado
     },
     'info-panel': {
         'display': 'grid',
@@ -223,14 +263,16 @@ styles = {
         'minHeight': '80px',
         'display': 'flex',
         'flexDirection': 'column',
-        'justifyContent': 'center'
+        'justifyContent': 'center',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'info-title': {
         'fontSize': '12px',
         'fontWeight': '600',
-        'color': colors['gold'],  # Títulos dorados
+        'color': colors['gold'],  # Títulos en dorado
         'marginBottom': '5px',
-        'textAlign': 'center'
+        'textAlign': 'center',
+        'textShadow': '1px 1px 1px rgba(0,0,0,0.3)'
     },
     'info-value': {
         'fontSize': '16px',
@@ -241,26 +283,30 @@ styles = {
     'filter-label': {
         'fontWeight': '600',
         'marginBottom': '5px',
-        'color': colors['title-color'],
-        'fontSize': '12px'
+        'color': colors['gold'],  # Etiquetas en dorado
+        'fontSize': '12px',
+        'textShadow': '1px 1px 1px rgba(0,0,0,0.2)'
     },
     'dropdown': {
         'width': '100%',
         'fontSize': '12px',
-        'marginBottom': '10px'
+        'marginBottom': '10px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'card': {
         'backgroundColor': colors['panel-general'],
         'borderRadius': '8px',
         'padding': '10px',
         'marginBottom': '10px',
-        'textAlign': 'center'
+        'textAlign': 'center',
+        'border': f'2px solid {colors["gold"]}'  # Borde dorado
     },
     'kpi-title': {
         'fontSize': '12px',
         'marginBottom': '5px',
-        'color': colors['gold'],  # Títulos dorados
-        'fontWeight': '600'
+        'color': colors['gold'],  # Títulos en dorado
+        'fontWeight': '600',
+        'textShadow': '1px 1px 1px rgba(0,0,0,0.3)'
     },
     'kpi-value': {
         'fontSize': '20px',
@@ -271,26 +317,28 @@ styles = {
         'backgroundColor': colors['filter-bg'],
         'padding': '10px',
         'borderRadius': '8px',
-        'marginTop': '10px'
+        'marginTop': '10px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'photo-title': {
         'textAlign': 'center',
-        'color': colors['gold'],  # Título dorado
+        'color': colors['gold'],  # Título en dorado
         'fontWeight': '600',
         'fontSize': '14px',
-        'marginBottom': '8px'
+        'marginBottom': '8px',
+        'textShadow': '1px 1px 1px rgba(0,0,0,0.2)'
     },
     'photo-button': {
         'padding': '6px 12px',
         'borderRadius': '6px',
-        'backgroundColor': colors['gold'],  # Botón dorado
-        'color': 'white',
+        'backgroundColor': colors['gold'],  # Botones dorados
+        'color': '#333',
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
         'fontSize': '12px',
         'margin': '4px',
-        'transition': 'all 0.2s ease'
+        'boxShadow': '0 2px 4px rgba(0,0,0,0.2)'
     },
     'modal': {
         'position': 'fixed',
@@ -310,18 +358,20 @@ styles = {
         'borderRadius': '8px',
         'width': '90%',
         'maxHeight': '90%',
-        'overflow': 'auto'
+        'overflow': 'auto',
+        'border': f'2px solid {colors["gold"]}'  # Borde dorado
     },
     'modal-image': {
         'width': '100%',
         'borderRadius': '6px',
-        'marginBottom': '10px'
+        'marginBottom': '10px',
+        'border': f'1px solid {colors["gold"]}'  # Borde dorado
     },
     'close-button': {
         'padding': '6px 12px',
         'borderRadius': '6px',
         'backgroundColor': colors['gold'],  # Botón dorado
-        'color': 'white',
+        'color': '#333',
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
@@ -486,11 +536,11 @@ app.layout = html.Div(style=styles['container'], children=[
     # Pie de página
     html.Div(style={
         'textAlign': 'center',
-        'color': colors['title-color'],
+        'color': colors['gold'],  # Texto en dorado
         'marginTop': '15px',
         'fontSize': '12px',
         'padding': '10px',
-        'borderTop': f'1px solid {colors["title-color"]}'
+        'borderTop': f'1px solid {colors["gold"]}'  # Borde superior dorado
     }, children=[
         html.P("© 2025 Fundación AIP"),
         html.P(f"Datos actualizados al {datetime.now().strftime('%d/%m/%Y')}")
@@ -499,8 +549,8 @@ app.layout = html.Div(style=styles['container'], children=[
     # Almacenamiento
     dcc.Store(id='filtered-data'),
     dcc.Store(id='selected-municipio'),
-    dcc.Store(id='photo-store'),
-    dcc.Store(id='map-center-store', data={'lat': 4.6, 'lon': -74.1, 'zoom': 4.5})
+    dcc.Store(id='map-center', data={'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}),
+    dcc.Store(id='photo-store')
 ])
 
 # 5. Callbacks
@@ -510,15 +560,21 @@ app.layout = html.Div(style=styles['container'], children=[
      Output('total-inversion', 'children'),
      Output('total-beneficiarios', 'children'),
      Output('total-area', 'children'),
-     Output('mapa', 'figure')],
+     Output('mapa', 'figure'),
+     Output('map-center', 'data')],
     [Input('tipo-dropdown', 'value'),
      Input('departamento-dropdown', 'value'),
      Input('comunidad-dropdown', 'value'),
      Input('year-slider', 'value'),
-     Input('costo-slider', 'value')],
-    [State('map-center-store', 'data')]
+     Input('costo-slider', 'value'),
+     Input('selected-municipio', 'data')],
+    [State('map-center', 'data'),
+     State('filtered-data', 'data')]
 )
-def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
+def update_data(tipos, departamentos, comunidades, anos, costos, selected_municipio, current_map_center, current_filtered_data):
+    ctx = callback_context
+    triggered_input = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    
     filtered = df[
         (df['Fecha inicio'].dt.year >= anos[0]) & 
         (df['Fecha inicio'].dt.year <= anos[1]) &
@@ -535,8 +591,8 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
     
     if filtered.empty:
         fig = px.choropleth_mapbox(
-            center={"lat": map_center['lat'], "lon": map_center['lon']},
-            zoom=map_center['zoom']
+            center={"lat": 4.6, "lon": -74.1},
+            zoom=4.5
         )
         fig.update_layout(
             mapbox_style="carto-positron",
@@ -549,7 +605,7 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
                 font=dict(size=14)
             )]
         )
-        return [], "0", "$0M", "0", "0 ha", fig
+        return [], "0", "$0M", "0", "0 ha", fig, {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
     
     filtered_with_geom = pd.merge(
         filtered,
@@ -560,12 +616,29 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
     )
     
     filtered_gdf = gpd.GeoDataFrame(filtered_with_geom)
+    
+    # Manejar el zoom al municipio seleccionado
+    if triggered_input == 'selected-municipio' and selected_municipio and current_filtered_data:
+        filtered_df = pd.DataFrame(current_filtered_data)
+        municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
+        if not municipio_data.empty:
+            departamento = municipio_data.iloc[0]['Departamento']
+            bbox = get_municipio_bbox(selected_municipio, departamento)
+            if bbox:
+                map_center = bbox
+            else:
+                map_center = current_map_center
+        else:
+            map_center = current_map_center
+    else:
+        map_center = current_map_center if current_map_center else {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
+    
     filtered_with_geometry = filtered_gdf[~filtered_gdf.geometry.isna()]
     
     if filtered_with_geometry.empty:
         fig = px.choropleth_mapbox(
-            center={"lat": map_center['lat'], "lon": map_center['lon']},
-            zoom=map_center['zoom']
+            center={"lat": 4.6, "lon": -74.1},
+            zoom=4.5
         )
         fig.update_layout(
             mapbox_style="carto-positron",
@@ -575,7 +648,7 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
                 x=0.5,
                 y=0.5,
                 showarrow=False,
-                font=dict(size=14)
+                font=dict(size=14))
             )]
         )
     else:
@@ -594,6 +667,7 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
             hovertemplate="<b>%{customdata[0]}</b><br>Depto: %{customdata[1]}<br>Proyecto: %{customdata[2]}"
         )
         
+        # Agregar puntos de ubicaciones AIP
         fig.add_trace(
             px.scatter_mapbox(
                 aip_locations_gdf,
@@ -607,6 +681,32 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
                 customdata=aip_locations_gdf[["Municipio", "Departamen"]]
             ).data[0]
         )
+        
+        # Resaltar municipio seleccionado con polígono rojo
+        if selected_municipio and current_filtered_data:
+            filtered_df = pd.DataFrame(current_filtered_data)
+            municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
+            if not municipio_data.empty:
+                departamento = municipio_data.iloc[0]['Departamento']
+                selected_municipio_geom = municipios_gdf[
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto'] == departamento.upper().strip())
+                ]
+                if not selected_municipio_geom.empty:
+                    fig.add_trace(
+                        px.choropleth_mapbox(
+                            selected_municipio_geom,
+                            geojson=selected_municipio_geom.geometry,
+                            locations=selected_municipio_geom.index,
+                            color_discrete_sequence=[colors['map-highlight']]
+                        ).update_traces(
+                            hovertemplate=None,
+                            hoverinfo='skip',
+                            marker_opacity=0.8,
+                            marker_line_width=2,
+                            marker_line_color='gold'
+                        ).data[0]
+                    )
     
     fig.update_layout(
         mapbox_style="carto-positron",
@@ -625,129 +725,13 @@ def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
         total_inversion,
         total_beneficiarios,
         total_area,
-        fig
+        fig,
+        map_center
     )
 
 @app.callback(
-    [Output('mapa', 'figure', allow_duplicate=True),
-     Output('selected-municipio', 'data'),
-     Output('map-center-store', 'data')],
-    [Input({'type': 'municipio-card', 'index': ALL}, 'n_clicks'),
-     Input('mapa', 'clickData')],
-    [State('mapa', 'figure'),
-     State('filtered-data', 'data'),
-     State('map-center-store', 'data')],
-    prevent_initial_call=True
-)
-def update_map_selection(clicks, map_click, current_figure, filtered_data, map_center):
-    ctx = callback_context
-    
-    if not ctx.triggered or not filtered_data:
-        raise PreventUpdate
-    
-    trigger_id = ctx.triggered[0]['prop_id']
-    
-    if trigger_id == 'mapa.clickData':
-        if map_click and 'points' in map_click and map_click['points']:
-            point = map_click['points'][0]
-            municipio = point['customdata'][0] if 'customdata' in point and point['customdata'] else None
-        else:
-            raise PreventUpdate
-    else:
-        municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
-    
-    if not municipio:
-        raise PreventUpdate
-    
-    # Obtener la geometría del municipio seleccionado
-    municipio_geom = municipios_gdf[municipios_gdf['MpNombre'] == municipio].iloc[0].geometry
-    centroid = municipio_geom.centroid
-    bounds = municipio_geom.bounds
-    
-    # Calcular el zoom adecuado para el municipio
-    width = bounds[2] - bounds[0]
-    height = bounds[3] - bounds[1]
-    zoom_level = 9 - max(width, height) / 0.5  # Ajuste empírico
-    
-    # Actualizar el centro del mapa
-    new_center = {
-        'lat': centroid.y,
-        'lon': centroid.x,
-        'zoom': max(6, min(12, zoom_level))  # Límites para el zoom
-    }
-    
-    # Crear una copia de la figura actual
-    updated_figure = current_figure.copy()
-    
-    # Eliminar cualquier trazo de resaltado previo
-    if 'data' in updated_figure:
-        updated_figure['data'] = [d for d in updated_figure['data'] if not d.get('name', '').startswith('selected-')]
-    
-    # Agregar trazo para resaltar el polígono seleccionado
-    updated_figure['data'].append({
-        'type': 'scattermapbox',
-        'mode': 'lines',
-        'lon': list(municipio_geom.exterior.coords.xy[0]),
-        'lat': list(municipio_geom.exterior.coords.xy[1]),
-        'fill': 'toself',
-        'fillcolor': colors['map-highlight'] + '40',  # Con transparencia
-        'line': {'color': colors['map-highlight'], 'width': 3},
-        'hoverinfo': 'skip',
-        'showlegend': False,
-        'name': 'selected-polygon'
-    })
-    
-    # Actualizar el centro y zoom del mapa
-    updated_figure['layout']['mapbox']['center'] = {'lat': centroid.y, 'lon': centroid.x}
-    updated_figure['layout']['mapbox']['zoom'] = new_center['zoom']
-    
-    return updated_figure, municipio, new_center
-
-@app.callback(
-    Output('municipios-cards-container', 'children'),
-    [Input('filtered-data', 'data')],
-    [State('selected-municipio', 'data')]
-)
-def update_municipios_list(filtered_data, selected_municipio):
-    if not filtered_data:
-        return html.Div("No hay municipios con los filtros actuales", style={
-            'textAlign': 'center', 
-            'color': 'white', 
-            'padding': '10px'
-        })
-    
-    filtered_df = pd.DataFrame(filtered_data)
-    municipios = filtered_df['Municipio'].unique()
-    
-    cards = []
-    for municipio in sorted(municipios):
-        count = len(filtered_df[filtered_df['Municipio'] == municipio])
-        is_selected = municipio == selected_municipio
-        
-        card_style = styles['municipio-card-selected'] if is_selected else styles['municipio-card']
-        name_style = styles['municipio-name-selected'] if is_selected else styles['municipio-name']
-        count_style = styles['municipio-projects-selected'] if is_selected else styles['municipio-projects']
-        
-        cards.append(
-            html.Div(
-                [
-                    html.Div(municipio, style=name_style),
-                    html.Div(f"{count} proyecto{'s' if count > 1 else ''}", style=count_style)
-                ],
-                id={'type': 'municipio-card', 'index': municipio},
-                style=card_style,
-                n_clicks=0
-            )
-        )
-    
-    return cards if cards else html.Div("No hay municipios con los filtros actuales", style={
-        'textAlign': 'center', 
-        'color': 'white', 
-        'padding': '10px'
-    })
-
-@app.callback(
-    [Output('municipio-value', 'children'),
+    [Output('selected-municipio', 'data'),
+     Output('municipio-value', 'children'),
      Output('beneficiarios-value', 'children'),
      Output('financiador-value', 'children'),
      Output('duracion-value', 'children'),
@@ -757,27 +741,53 @@ def update_municipios_list(filtered_data, selected_municipio):
      Output('proyecto-selector', 'value'),
      Output('photo-buttons', 'children'),
      Output('photo-store', 'data')],
-    [Input('selected-municipio', 'data'),
+    [Input({'type': 'municipio-card', 'index': ALL}, 'n_clicks'),
+     Input('mapa', 'clickData'),
      Input('proyecto-selector', 'value')],
-    [State('filtered-data', 'data')]
+    [State('filtered-data', 'data'),
+     State({'type': 'municipio-card', 'index': ALL}, 'id'),
+     State('map-center', 'data')]
 )
-def update_municipio_info(selected_municipio, selected_proyecto, filtered_data):
-    if not selected_municipio or not filtered_data:
-        return ["Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+def handle_selection(clicks, map_click, selected_proyecto, filtered_data, municipio_ids, map_center):
+    ctx = callback_context
+    
+    if not ctx.triggered or not filtered_data:
+        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+    
+    trigger_id = ctx.triggered[0]['prop_id']
+    
+    if trigger_id == 'mapa.clickData':
+        if map_click and 'points' in map_click and map_click['points']:
+            point = map_click['points'][0]
+            if 'customdata' in point and len(point['customdata']) == 4:  # Es un polígono
+                municipio = point['customdata'][0]
+            else:  # Es un punto de ubicación AIP
+                municipio = point['customdata'][0] if 'customdata' in point and point['customdata'] else None
+        else:
+            return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+    elif trigger_id == 'proyecto-selector.value':
+        filtered_df = pd.DataFrame(filtered_data)
+        municipio_data = filtered_df[filtered_df['ID'] == selected_proyecto]
+        if not municipio_data.empty:
+            municipio = municipio_data.iloc[0]['Municipio']
+        else:
+            raise PreventUpdate
+    else:
+        municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
     
     filtered_df = pd.DataFrame(filtered_data)
-    municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
+    municipio_data = filtered_df[filtered_df['Municipio'] == municipio]
     
-    if selected_proyecto:
+    if trigger_id == 'proyecto-selector.value' and selected_proyecto:
         proyecto_data = municipio_data[municipio_data['ID'] == selected_proyecto].iloc[0]
     else:
         proyecto_data = municipio_data.iloc[0] if not municipio_data.empty else None
         selected_proyecto = proyecto_data['ID'] if proyecto_data is not None else None
     
     if proyecto_data is None:
-        return ["Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
     
-    proyectos_options = [{'label': f"Proyecto {row['ID']}", 'value': row['ID']} 
+    proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']} 
                         for _, row in municipio_data.iterrows()]
     
     foto_data = []
@@ -801,7 +811,8 @@ def update_municipio_info(selected_municipio, selected_proyecto, filtered_data):
                 )
     
     return [
-        selected_municipio, 
+        municipio, 
+        municipio, 
         f"{proyecto_data['Beneficiarios totales']:,}", 
         proyecto_data['Entidad financiadora'], 
         f"{proyecto_data['Duración del proyecto (meses)']:.1f}", 
