@@ -17,20 +17,17 @@ from dash.exceptions import PreventUpdate
 from shapely.geometry import Polygon
 import base64
 
-
-os.environ['USE_PYGEOS'] = '0'  # Solo si usas GeoPandas
-
 # 1. Configuración inicial 
 
 app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_callback_exceptions=True)
 server = app.server  # <-- Línea clave para Railway
 
 #carga de datos
-shapefile_path = "data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
-municipios_gdf = gpd.read_file(shapefile_path)
+geojson_path = "data/geojson/municipios.geojson"
+municipios_gdf = gpd.read_file(geojson_path)
 
 # Cargar shapefile de ubicaciones AIP
-aip_locations_path = "data/shapefiles/cobertura_trabajo_aip.shp"
+aip_locations_path = "data/geojson/aip_locations.geojson"
 aip_locations_gdf = gpd.read_file(aip_locations_path)
 
 # Cargar y codificar el logo y la figura de huella
@@ -1289,5 +1286,5 @@ def update_modal_image(photo_clicks, foto_data):
     raise PreventUpdate
 
 # 6. Ejecutar la aplicación
-if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=8050, debug=False)
+app = Dash(__name__)
+server = app.server  # Esta línea debe estar justo después de crear la app
