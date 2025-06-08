@@ -492,7 +492,8 @@ app.layout = html.Div(style=styles['container'], children=[
     # Almacenamiento
     dcc.Store(id='filtered-data'),
     dcc.Store(id='selected-municipio'),
-    dcc.Store(id='photo-store')
+    dcc.Store(id='photo-store'),
+    dcc.Store(id='map-center-store', data={'lat': 4.6, 'lon': -74.1, 'zoom': 4.5})
 ])
 
 # 5. Callbacks (simplificados pero funcionales)
@@ -507,9 +508,10 @@ app.layout = html.Div(style=styles['container'], children=[
      Input('departamento-dropdown', 'value'),
      Input('comunidad-dropdown', 'value'),
      Input('year-slider', 'value'),
-     Input('costo-slider', 'value')]
+     Input('costo-slider', 'value'),
+     Input('map-center-store', 'data')]
 )
-def update_data(tipos, departamentos, comunidades, anos, costos):
+def update_data(tipos, departamentos, comunidades, anos, costos, map_center):
     filtered = df[
         (df['Fecha inicio'].dt.year >= anos[0]) & 
         (df['Fecha inicio'].dt.year <= anos[1]) &
@@ -526,8 +528,8 @@ def update_data(tipos, departamentos, comunidades, anos, costos):
     
     if filtered.empty:
         fig = px.choropleth_mapbox(
-            center={"lat": 4.6, "lon": -74.1},
-            zoom=4.5
+            center={"lat": map_center['lat'], "lon": map_center['lon']},
+            zoom=map_center['zoom']
         )
         fig.update_layout(
             mapbox_style="carto-positron",
@@ -555,8 +557,8 @@ def update_data(tipos, departamentos, comunidades, anos, costos):
     
     if filtered_with_geometry.empty:
         fig = px.choropleth_mapbox(
-            center={"lat": 4.6, "lon": -74.1},
-            zoom=4.5
+            center={"lat": map_center['lat'], "lon": map_center['lon']},
+            zoom=map_center['zoom']
         )
         fig.update_layout(
             mapbox_style="carto-positron",
@@ -575,8 +577,8 @@ def update_data(tipos, departamentos, comunidades, anos, costos):
             geojson=filtered_with_geometry.geometry,
             locations=filtered_with_geometry.index,
             color="Tipo de proyecto",
-            center={"lat": 4.6, "lon": -74.1},
-            zoom=4.5,
+            center={"lat": map_center['lat'], "lon": map_center['lon']},
+            zoom=map_center['zoom'],
             opacity=0.7,
             custom_data=['MpNombre', 'Depto', 'Tipo de proyecto', 'ID']
         )
@@ -673,18 +675,20 @@ def update_municipios_list(filtered_data, selected_municipio):
      Output('proyecto-selector', 'options'),
      Output('proyecto-selector', 'value'),
      Output('photo-buttons', 'children'),
-     Output('photo-store', 'data')],
+     Output('photo-store', 'data'),
+     Output('map-center-store', 'data')],
     [Input({'type': 'municipio-card', 'index': ALL}, 'n_clicks'),
      Input('mapa', 'clickData'),
      Input('proyecto-selector', 'value')],
     [State('filtered-data', 'data'),
-     State({'type': 'municipio-card', 'index': ALL}, 'id')]
+     State({'type': 'municipio-card', 'index': ALL}, 'id'),
+     State('map-center-store', 'data')]
 )
-def handle_selection(clicks, map_click, selected_proyecto, filtered_data, municipio_ids):
+def handle_selection(clicks, map_click, selected_proyecto, filtered_data, municipio_ids, current_map_center):
     ctx = callback_context
     
     if not ctx.triggered or not filtered_data:
-        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None, current_map_center]
     
     trigger_id = ctx.triggered[0]['prop_id']
     
@@ -692,17 +696,32 @@ def handle_selection(clicks, map_click, selected_proyecto, filtered_data, munici
         if map_click and 'points' in map_click and map_click['points']:
             point = map_click['points'][0]
             municipio = point['customdata'][0] if 'customdata' in point and point['customdata'] else None
+            # Obtener coordenadas del municipio para centrar el mapa
+            municipio_geom = municipios_gdf[municipios_gdf['MpNombre'] == municipio]
+            if not municipio_geom.empty:
+                centroid = municipio_geom.geometry.iloc[0].centroid
+                new_center = {'lat': centroid.y, 'lon': centroid.x, 'zoom': 8}
+            else:
+                new_center = current_map_center
         else:
-            return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+            return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None, current_map_center]
     elif trigger_id == 'proyecto-selector.value':
         filtered_df = pd.DataFrame(filtered_data)
         municipio_data = filtered_df[filtered_df['ID'] == selected_proyecto]
         if not municipio_data.empty:
             municipio = municipio_data.iloc[0]['Municipio']
+            new_center = current_map_center
         else:
             raise PreventUpdate
     else:
         municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
+        # Obtener coordenadas del municipio para centrar el mapa
+        municipio_geom = municipios_gdf[municipios_gdf['MpNombre'] == municipio]
+        if not municipio_geom.empty:
+            centroid = municipio_geom.geometry.iloc[0].centroid
+            new_center = {'lat': centroid.y, 'lon': centroid.x, 'zoom': 8}
+        else:
+            new_center = current_map_center
     
     filtered_df = pd.DataFrame(filtered_data)
     municipio_data = filtered_df[filtered_df['Municipio'] == municipio]
@@ -714,7 +733,7 @@ def handle_selection(clicks, map_click, selected_proyecto, filtered_data, munici
         selected_proyecto = proyecto_data['ID'] if proyecto_data is not None else None
     
     if proyecto_data is None:
-        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None]
+        return [None, "Seleccione", "0", "N/A", "0", "0", "N/A", [], None, [], None, new_center]
     
     proyectos_options = [{'label': f"Proyecto {row['ID']}", 'value': row['ID']} 
                         for _, row in municipio_data.iterrows()]
@@ -750,7 +769,8 @@ def handle_selection(clicks, map_click, selected_proyecto, filtered_data, munici
         proyectos_options,
         selected_proyecto,
         buttons,
-        foto_data
+        foto_data,
+        new_center
     ]
 
 @app.callback(
