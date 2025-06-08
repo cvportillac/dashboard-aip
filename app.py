@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Dashboard Fundación AIP - Versión Mejorada con:
-1. Experiencia móvil optimizada
-2. Barra de navegación visible
-3. Contenido responsive sin cortes
-4. Interacciones táctiles mejoradas
+Dashboard Fundación AIP - Versión Final con:
+1. Sincronización perfecta entre mapa y lista de municipios
+2. Actualización automática de información
+3. Corrección para municipios sin información
+4. Experiencia móvil optimizada
 """
 
 import pandas as pd
@@ -87,6 +87,10 @@ try:
     municipios_gdf['lon'] = municipios_gdf_projected.centroid.map(lambda p: p.x)
     municipios_gdf['lat'] = municipios_gdf_projected.centroid.map(lambda p: p.y)
 
+    # Normalizar nombres para matching exacto
+    municipios_gdf['MpNombre_Upper'] = municipios_gdf['MpNombre'].str.upper().str.strip()
+    municipios_gdf['Depto_Upper'] = municipios_gdf['Depto'].str.upper().str.strip()
+
     # Cargar datos de proyectos
     def cargar_base_datos():
         df = pd.read_excel("data/proyectos.xlsx")
@@ -94,11 +98,9 @@ try:
         df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
         df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
         
-        # Normalizar nombres
-        df['Municipio'] = df['Municipio'].str.upper().str.strip()
-        df['Departamento'] = df['Departamento'].str.upper().str.strip()
-        municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.upper().str.strip()
-        municipios_gdf['Depto'] = municipios_gdf['Depto'].str.upper().str.strip()
+        # Normalizar nombres para matching exacto
+        df['Municipio_Upper'] = df['Municipio'].str.upper().str.strip()
+        df['Departamento_Upper'] = df['Departamento'].str.upper().str.strip()
         
         return df
 
@@ -122,7 +124,9 @@ except Exception as e:
         'Duración del proyecto (meses)': [0],
         'Producto principal generado': ['Ejemplo'],
         'Comunidad beneficiaria': ['Ejemplo'],
-        'ID': [0]
+        'ID': [0],
+        'Municipio_Upper': ['EJEMPLO'],
+        'Departamento_Upper': ['EJEMPLO']
     })
     logo_encoded = None
     huella_encoded = None
@@ -300,7 +304,7 @@ styles = {
         'minWidth': '0',
         'wordWrap': 'break-word',
         'width': '100%',
-        'overflow': 'hidden'  # Añadido para manejar contenido largo
+        'overflow': 'hidden'
     },
     'municipio-card-selected': {
         'padding': '10px',
@@ -319,7 +323,7 @@ styles = {
         'minWidth': '0',
         'wordWrap': 'break-word',
         'width': '100%',
-        'overflow': 'hidden'  # Añadido para manejar contenido largo
+        'overflow': 'hidden'
     },
     'municipio-name': {
         'fontWeight': '600',
@@ -329,9 +333,9 @@ styles = {
         'color': '#333333',
         'width': '100%',
         'textOverflow': 'ellipsis',
-        'whiteSpace': 'normal',  # Cambiado de nowrap a normal para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'municipio-name-selected': {
         'fontWeight': '600',
@@ -342,9 +346,9 @@ styles = {
         'width': '100%',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.7)',
         'textOverflow': 'ellipsis',
-        'whiteSpace': 'normal',  # Cambiado de nowrap a normal para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'municipio-projects': {
         'fontSize': 'clamp(14px, 2.5vw, 16px)',
@@ -417,7 +421,7 @@ styles = {
         'transition': 'all 0.3s ease',
         'minHeight': '100px',
         'width': '100%',
-        'overflow': 'hidden'  # Añadido para manejar contenido largo
+        'overflow': 'hidden'
     },
     'info-title': {
         'fontSize': 'clamp(14px, 2.5vw, 16px)',
@@ -430,9 +434,9 @@ styles = {
         'textTransform': 'uppercase',
         'letterSpacing': '0.5px',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'info-value': {
         'fontSize': 'clamp(18px, 4vw, 24px)',
@@ -445,9 +449,9 @@ styles = {
         'flexDirection': 'column',
         'justifyContent': 'center',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'info-text': {
         'fontSize': 'clamp(16px, 3.5vw, 20px)',
@@ -461,9 +465,9 @@ styles = {
         'justifyContent': 'center',
         'lineHeight': '1.4',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'filter-label': {
         'fontWeight': '600',
@@ -471,9 +475,9 @@ styles = {
         'color': colors['title-color'],
         'fontSize': 'clamp(14px, 3vw, 16px)',
         'textShadow': '1px 1px 1px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'dropdown': {
         'width': '100%',
@@ -507,7 +511,7 @@ styles = {
         'justifyContent': 'center',
         'border': f'2px solid {colors["selected-color"]}',
         'width': '100%',
-        'overflow': 'hidden'  # Añadido para manejar contenido largo
+        'overflow': 'hidden'
     },
     'kpi-title': {
         'fontSize': 'clamp(16px, 3vw, 18px)',
@@ -515,9 +519,9 @@ styles = {
         'color': colors['title-color'],
         'fontWeight': '600',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'kpi-value': {
         'fontSize': 'clamp(24px, 5vw, 32px)',
@@ -525,9 +529,9 @@ styles = {
         'color': colors['value-color'],
         'marginTop': '8px',
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'photo-panel': {
         'gridColumn': '1 / span 1',
@@ -565,9 +569,9 @@ styles = {
         'fontSize': 'clamp(16px, 3vw, 20px)',
         'marginBottom': '8px',
         'textTransform': 'uppercase',
-        'whiteSpace': 'normal',  # Cambiado para permitir múltiples líneas
+        'whiteSpace': 'normal',
         'overflow': 'hidden',
-        'wordBreak': 'break-word'  # Añadido para romper palabras largas
+        'wordBreak': 'break-word'
     },
     'photo-dropdown': {
         'width': '100%',
@@ -871,7 +875,7 @@ app.layout = html.Div(style={
                     'gap': '10px',
                     'padding': '5px',
                     'width': '100%',
-                    'overflow': 'hidden'  # Añadido para manejar contenido largo
+                    'overflow': 'hidden'
                 })
             ])
         ]),
@@ -1028,6 +1032,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
     ctx = callback_context
     triggered_input = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
     
+    # Aplicar filtros
     filtered = df[
         (df['Fecha inicio'].dt.year >= anos[0]) & 
         (df['Fecha inicio'].dt.year <= anos[1]) &
@@ -1042,43 +1047,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
     if comunidades:
         filtered = filtered[filtered['Comunidad beneficiaria'].isin(comunidades)]
     
-    if filtered.empty:
-        fig = px.choropleth_mapbox(
-            title="No hay datos que coincidan con los filtros aplicados",
-            center={"lat": 4.6, "lon": -74.1},
-            zoom=4.5
-        )
-        fig.update_layout(
-            mapbox_style="carto-positron",
-            margin={"r":0,"t":0,"l":0,"b":0},
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            annotations=[dict(
-                text="No hay municipios que coincidan con los filtros aplicados",
-                x=0.5,
-                y=0.5,
-                xref="paper",
-                yref="paper",
-                showarrow=False,
-                font=dict(size=20)
-            )]
-        )
-        
-        return (
-            [],
-            "0",
-            "$0M",
-            "0",
-            "0 ha",
-            fig,
-            {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
-        )
-    
+    # Mejorar el merge con los datos geográficos
     filtered_with_geom = pd.merge(
         filtered,
-        municipios_gdf[['MpNombre', 'Depto', 'geometry', 'lon', 'lat']],
-        left_on=['Municipio', 'Departamento'],
-        right_on=['MpNombre', 'Depto'],
+        municipios_gdf[['MpNombre_Upper', 'Depto_Upper', 'geometry', 'lon', 'lat']],
+        left_on=['Municipio_Upper', 'Departamento_Upper'],
+        right_on=['MpNombre_Upper', 'Depto_Upper'],
         how='left'
     )
     
@@ -1096,8 +1070,8 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             else:
                 # Si no se puede calcular el bbox, centrar en las coordenadas del municipio
                 municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
-                    (municipios_gdf['Depto'] == departamento.upper().strip())
+                    (municipios_gdf['MpNombre_Upper'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto_Upper'] == departamento.upper().strip())
                 ]
                 if not municipio_geom.empty:
                     map_center = {
@@ -1112,6 +1086,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
     else:
         map_center = current_map_center if current_map_center else {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
     
+    # Filtrar solo municipios con geometría válida
     filtered_with_geometry = filtered_gdf[~filtered_gdf.geometry.isna()]
     
     if filtered_with_geometry.empty:
@@ -1136,6 +1111,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             )]
         )
     else:
+        # Crear figura del mapa con los datos filtrados
         fig = px.choropleth_mapbox(
             filtered_with_geometry,
             geojson=filtered_with_geometry.geometry,
@@ -1145,13 +1121,14 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             center={"lat": map_center['lat'], "lon": map_center['lon']},
             zoom=map_center['zoom'],
             opacity=0.8,
-            custom_data=['MpNombre', 'Depto', 'Tipo de proyecto', 'ID']
+            custom_data=['Municipio', 'Departamento', 'Tipo de proyecto', 'ID', 'MpNombre_Upper', 'Depto_Upper']
         )
         
         fig.update_traces(
             hovertemplate="<b>Municipio: %{customdata[0]}</b><br>Departamento: %{customdata[1]}<br>Proyecto: %{customdata[2]}<br>ID: %{customdata[3]}<extra></extra>"
         )
         
+        # Añadir capa de cobertura AIP
         fig.add_trace(
             px.scatter_mapbox(
                 aip_locations_gdf,
@@ -1167,14 +1144,15 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             ).data[0]
         )
         
+        # Resaltar municipio seleccionado
         if selected_municipio and current_filtered_data:
             filtered_df = pd.DataFrame(current_filtered_data)
             municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
             if not municipio_data.empty:
                 departamento = municipio_data.iloc[0]['Departamento']
                 selected_municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
-                    (municipios_gdf['Depto'] == departamento.upper().strip())
+                    (municipios_gdf['MpNombre_Upper'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto_Upper'] == departamento.upper().strip())
                 ]
                 if not selected_municipio_geom.empty:
                     fig.add_trace(
@@ -1189,7 +1167,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                         ).data[0]
                     )
     
-    # Configuración del mapa sin controles de zoom
+    # Configuración del mapa
     fig.update_layout(
         mapbox_style="carto-positron",
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1206,6 +1184,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         clickmode='event+select'
     )
     
+    # Calcular métricas generales
     total_proyectos = len(filtered)
     total_inversion = f"${filtered['Costo total ($COP)'].sum()/1000000:,.0f}M"
     total_beneficiarios = f"{filtered['Beneficiarios totales'].sum():,}"
@@ -1238,11 +1217,14 @@ def update_municipios_list(filtered_data, selected_municipio):
         })
     
     filtered_df = pd.DataFrame(filtered_data)
-    municipios = filtered_df['Municipio'].unique()
+    
+    # Agrupar por municipio y departamento para evitar duplicados
+    municipios_grouped = filtered_df.groupby(['Municipio', 'Departamento']).size().reset_index(name='Count')
     
     cards = []
-    for municipio in sorted(municipios):
-        count = len(filtered_df[filtered_df['Municipio'] == municipio])
+    for _, row in municipios_grouped.iterrows():
+        municipio = row['Municipio']
+        count = row['Count']
         is_selected = municipio == selected_municipio
         
         card_style = styles['municipio-card-selected'] if is_selected else styles['municipio-card']
@@ -1307,32 +1289,41 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
     if trigger_id == 'mapa.clickData':
         if map_click and 'points' in map_click and map_click['points']:
             point = map_click['points'][0]
-            if 'customdata' in point and len(point['customdata']) == 4:
-                municipio = point['customdata'][0]
+            if 'customdata' in point and len(point['customdata']) >= 4:
+                municipio = point['customdata'][0]  # Usar el nombre original del municipio
             else:
-                municipio = point['customdata'][0] if 'customdata' in point and point['customdata'] else None
+                municipio = None
         else:
-            default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
-            return [
-                None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
-                default_styles,
-                [], None, [], None
-            ]
+            municipio = None
     elif trigger_id == 'proyecto-selector.value':
         filtered_df = pd.DataFrame(filtered_data)
-        municipio_data = filtered_df[filtered_df['ID'] == selected_proyecto]
-        if not municipio_data.empty:
-            municipio = municipio_data.iloc[0]['Municipio']
+        proyecto_data = filtered_df[filtered_df['ID'] == selected_proyecto]
+        if not proyecto_data.empty:
+            municipio = proyecto_data.iloc[0]['Municipio']
         else:
-            raise PreventUpdate
+            municipio = None
     else:
-        municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
+        # Click en la tarjeta de municipio
+        button_id = json.loads(trigger_id.split('.')[0].replace("'", '"'))
+        municipio = button_id['index']
+    
+    if not municipio:
+        default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
+        return [
+            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
+            default_styles,
+            [], None, [], None
+        ]
     
     filtered_df = pd.DataFrame(filtered_data)
     municipio_data = filtered_df[filtered_df['Municipio'] == municipio]
     
     if trigger_id == 'proyecto-selector.value' and selected_proyecto:
-        proyecto_data = municipio_data[municipio_data['ID'] == selected_proyecto].iloc[0]
+        proyecto_data = municipio_data[municipio_data['ID'] == selected_proyecto]
+        if not proyecto_data.empty:
+            proyecto_data = proyecto_data.iloc[0]
+        else:
+            proyecto_data = municipio_data.iloc[0] if not municipio_data.empty else None
     else:
         proyecto_data = municipio_data.iloc[0] if not municipio_data.empty else None
         selected_proyecto = proyecto_data['ID'] if proyecto_data is not None else None
@@ -1345,12 +1336,14 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
             [], None, [], None
         ]
     
+    # Actualizar valores del panel
     beneficiarios = proyecto_data['Beneficiarios totales']
     financiador = proyecto_data['Entidad financiadora']
     duracion = f"{proyecto_data['Duración del proyecto (meses)']:.1f}"
     area = f"{proyecto_data['Área intervenida (ha)']:,.1f}"
     producto = proyecto_data['Producto principal generado']
     
+    # Actualizar estilos de las tarjetas
     card_styles = []
     for m_id in municipio_ids:
         if m_id['index'] == municipio:
@@ -1358,9 +1351,11 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
         else:
             card_styles.append(styles['municipio-card'])
     
+    # Actualizar selector de proyectos
     proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']} 
                         for _, row in municipio_data.iterrows()]
     
+    # Manejar fotos del proyecto
     foto_data = []
     buttons = []
     if selected_proyecto:
@@ -1446,8 +1441,8 @@ def update_modal_image(photo_clicks, foto_data):
 # Función mejorada para obtener bbox de municipio
 def get_municipio_bbox(municipio_name, departamento_name):
     try:
-        municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) & 
-                                  (municipios_gdf['Depto'] == departamento_name.upper().strip())]
+        municipio = municipios_gdf[(municipios_gdf['MpNombre_Upper'] == municipio_name.upper().strip()) & 
+                                  (municipios_gdf['Depto_Upper'] == departamento_name.upper().strip())]
         if municipio.empty:
             return None
         
