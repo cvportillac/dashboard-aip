@@ -5,7 +5,6 @@ Dashboard Fundación AIP - Versión Mejorada con:
 2. Barra de navegación visible
 3. Contenido responsive sin cortes
 4. Interacciones táctiles mejoradas
-5. Corrección para municipios problemáticos (La Florida, Morales, Totoró)
 """
 
 import pandas as pd
@@ -20,8 +19,6 @@ from dash.exceptions import PreventUpdate
 from shapely.geometry import Polygon
 import base64
 import io
-import unicodedata
-import re
 
 # Solución para el error de PIL
 try:
@@ -37,21 +34,6 @@ os.environ['USE_PYGEOS'] = '0'
 # Configuración inicial
 app = Dash(__name__, title="Dashboard Fundación AIP", suppress_callback_exceptions=True)
 server = app.server
-
-# Función para normalizar nombres de municipios (solución para problemas de coincidencia)
-def normalize_string(text):
-    if not isinstance(text, str):
-        return ""
-    # Convertir a mayúsculas, quitar tildes y caracteres especiales
-    text = unicodedata.normalize('NFD', text.upper().strip())
-    text = text.encode('ascii', 'ignore').decode('ascii')
-    # Reemplazar caracteres problemáticos
-    text = re.sub(r'[^A-Z0-9 ]', '', text)
-    # Correcciones específicas para municipios problemáticos
-    text = text.replace("TOTORO", "TOTORÓ")
-    text = text.replace("MORALES", "MORALES")
-    text = text.replace("LA FLORIDA", "LA FLORIDA")
-    return text.strip()
 
 # Función para codificar imágenes con transparencia
 def encode_image(image_path, mobile=False):
@@ -105,10 +87,6 @@ try:
     municipios_gdf['lon'] = municipios_gdf_projected.centroid.map(lambda p: p.x)
     municipios_gdf['lat'] = municipios_gdf_projected.centroid.map(lambda p: p.y)
 
-    # Normalizar nombres en el shapefile
-    municipios_gdf['MpNombre_normalized'] = municipios_gdf['MpNombre'].apply(normalize_string)
-    municipios_gdf['Depto_normalized'] = municipios_gdf['Depto'].apply(normalize_string)
-
     # Cargar datos de proyectos
     def cargar_base_datos():
         df = pd.read_excel("data/proyectos.xlsx")
@@ -116,14 +94,11 @@ try:
         df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
         df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
         
-        # Normalizar nombres de municipios y departamentos
-        df['Municipio_normalized'] = df['Municipio'].apply(normalize_string)
-        df['Departamento_normalized'] = df['Departamento'].apply(normalize_string)
-        
-        # Correcciones manuales para municipios problemáticos
-        df.loc[df['Municipio'].str.upper().str.contains('TOTORO'), 'Municipio_normalized'] = 'TOTORÓ'
-        df.loc[df['Municipio'].str.upper().str.contains('MORALES'), 'Municipio_normalized'] = 'MORALES'
-        df.loc[df['Municipio'].str.upper().str.contains('LA FLORIDA'), 'Municipio_normalized'] = 'LA FLORIDA'
+        # Normalizar nombres
+        df['Municipio'] = df['Municipio'].str.upper().str.strip()
+        df['Departamento'] = df['Departamento'].str.upper().str.strip()
+        municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.upper().str.strip()
+        municipios_gdf['Depto'] = municipios_gdf['Depto'].str.upper().str.strip()
         
         return df
 
@@ -147,9 +122,7 @@ except Exception as e:
         'Duración del proyecto (meses)': [0],
         'Producto principal generado': ['Ejemplo'],
         'Comunidad beneficiaria': ['Ejemplo'],
-        'ID': [0],
-        'Municipio_normalized': ['EJEMPLO'],
-        'Departamento_normalized': ['EJEMPLO']
+        'ID': [0]
     })
     logo_encoded = None
     huella_encoded = None
@@ -1065,14 +1038,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         )
     
     # Primero hacer merge con los municipios para obtener solo los que tienen geometría
-    municipios_con_geometria = municipios_gdf[['MpNombre', 'Depto', 'MpNombre_normalized', 'Depto_normalized', 'geometry', 'lon', 'lat']].dropna(subset=['geometry'])
-    
-    # Usar nombres normalizados para el merge
+    municipios_con_geometria = municipios_gdf[['MpNombre', 'Depto', 'geometry', 'lon', 'lat']].dropna(subset=['geometry'])
     filtered_with_geom = pd.merge(
         filtered,
         municipios_con_geometria,
-        left_on=['Municipio_normalized', 'Departamento_normalized'],
-        right_on=['MpNombre_normalized', 'Depto_normalized'],
+        left_on=['Municipio', 'Departamento'],
+        right_on=['MpNombre', 'Depto'],
         how='inner'  # Cambiado a inner join para solo obtener municipios con geometría
     )
     
@@ -1090,8 +1061,8 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             else:
                 # Si no se puede calcular el bbox, centrar en las coordenadas del municipio
                 municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre_normalized'] == normalize_string(selected_municipio)) & 
-                    (municipios_gdf['Depto_normalized'] == normalize_string(departamento))
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not municipio_geom.empty:
                     map_center = {
@@ -1166,8 +1137,8 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             if not municipio_data.empty:
                 departamento = municipio_data.iloc[0]['Departamento']
                 selected_municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre_normalized'] == normalize_string(selected_municipio)) & 
-                    (municipios_gdf['Depto_normalized'] == normalize_string(departamento))
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not selected_municipio_geom.empty:
                     fig.add_trace(
@@ -1233,8 +1204,8 @@ def update_municipios_list(filtered_data, selected_municipio):
     filtered_df = pd.DataFrame(filtered_data)
     
     # Solo mostrar municipios que tienen geometría en el mapa
-    municipios_con_geometria = municipios_gdf['MpNombre_normalized'].unique()
-    municipios_filtrados = filtered_df[filtered_df['Municipio_normalized'].isin(municipios_con_geometria)]
+    municipios_con_geometria = municipios_gdf['MpNombre'].unique()
+    municipios_filtrados = filtered_df[filtered_df['Municipio'].isin(municipios_con_geometria)]
     municipios = municipios_filtrados['Municipio'].unique()
     
     cards = []
@@ -1443,8 +1414,8 @@ def update_modal_image(photo_clicks, foto_data):
 # Función mejorada para obtener bbox de municipio
 def get_municipio_bbox(municipio_name, departamento_name):
     try:
-        municipio = municipios_gdf[(municipios_gdf['MpNombre_normalized'] == normalize_string(municipio_name)) & 
-                                  (municipios_gdf['Depto_normalized'] == normalize_string(departamento_name))]
+        municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) & 
+                                  (municipios_gdf['Depto'] == departamento_name.upper().strip())]
         if municipio.empty:
             return None
         
