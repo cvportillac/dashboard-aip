@@ -23,11 +23,11 @@ app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_cal
 server = app.server  # <-- Línea clave para Railway
 
 #carga de datos
-geojson_path = "data/geojson/municipios.geojson"
-municipios_gdf = gpd.read_file(geojson_path)
+shapefile_path = "data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
+municipios_gdf = gpd.read_file(shapefile_path)
 
 # Cargar shapefile de ubicaciones AIP
-aip_locations_path = "data/geojson/aip_locations.geojson"
+aip_locations_path = "data/shapefiles/cobertura_trabajo_aip.shp"
 aip_locations_gdf = gpd.read_file(aip_locations_path)
 
 # Cargar y codificar el logo y la figura de huella
@@ -1286,5 +1286,7 @@ def update_modal_image(photo_clicks, foto_data):
     raise PreventUpdate
 
 # 6. Ejecutar la aplicación
-app = Dash(__name__)
-server = app.server  # Esta línea debe estar justo después de crear la app
+server = app.server
+if __name__ == '__main__':
+    print("\n✅ Dashboard listo! Accede en: http://127.0.0.1:8050\n")
+    app.run(debug=True, dev_tools_ui=False)
