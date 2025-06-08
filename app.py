@@ -1,3 +1,13 @@
+
+
+2 de 2
+Script funcional Dashboard AIP
+Recibidos
+
+Cristiam Victoriano Portilla Cabrera <cvportillac@unal.edu.co>
+5 jun 2025, 15:58 (hace 2 días)
+para mí
+
 # -*- coding: utf-8 -*-
 """
 Created on Sat May 24 17:12:16 2025
@@ -17,16 +27,25 @@ from dash.exceptions import PreventUpdate
 from shapely.geometry import Polygon
 import base64
 
-# 1. Configuración inicial y carga de datos
-shapefile_path = "F:/dashboard-aip/data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
+
+os.environ['USE_PYGEOS'] = '0'  # Solo si usas GeoPandas
+
+# 1. Configuración inicial
+
+app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_callback_exceptions=True)
+server = app.server  # <-- Línea clave para Railway
+
+#carga de datos
+shapefile_path = "data/shapefiles/municipio_distrito_y_area_no_municipalizada.shp"
 municipios_gdf = gpd.read_file(shapefile_path)
 
 # Cargar shapefile de ubicaciones AIP
-aip_locations_path = "F:/dashboard-aip/data/shapefiles/cobertura_trabajo_aip.shp"
+aip_locations_path = "data/shapefiles/cobertura_trabajo_aip.shp"
 aip_locations_gdf = gpd.read_file(aip_locations_path)
 
-# Cargar y codificar el logo
-logo_path = "F:/dashboard-aip/assets/logo.png"
+# Cargar y codificar el logo y la figura de huella
+logo_path = "assets/logo.png"
+huella_path = "assets/Figura_huella_aip.png"
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -34,6 +53,7 @@ def encode_image(image_path):
     return f"data:image/jpeg;base64,{encoded_string}"
 
 logo_encoded = encode_image(logo_path) if os.path.exists(logo_path) else None
+huella_encoded = encode_image(huella_path) if os.path.exists(huella_path) else None
 
 if municipios_gdf.crs != "EPSG:4326":
     municipios_gdf = municipios_gdf.to_crs("EPSG:4326")
@@ -46,17 +66,17 @@ municipios_gdf['lon'] = municipios_gdf_projected.centroid.map(lambda p: p.x)
 municipios_gdf['lat'] = municipios_gdf_projected.centroid.map(lambda p: p.y)
 
 def cargar_base_datos():
-    df = pd.read_excel("F:/dashboard-aip/data/proyectos.xlsx")
+    df = pd.read_excel("data/proyectos.xlsx")
     df['Fecha inicio'] = pd.to_datetime(df['Fecha inicio'])
     df['Fecha fin'] = pd.to_datetime(df['Fecha fin'])
     df['Beneficiarios totales'] = df['Beneficiarios directos'] + df['Beneficiarios indirectos']
-    
+   
     # Normalizar nombres de municipios y departamentos para coincidencia exacta
     df['Municipio'] = df['Municipio'].str.upper().str.strip()
     df['Departamento'] = df['Departamento'].str.upper().str.strip()
     municipios_gdf['MpNombre'] = municipios_gdf['MpNombre'].str.upper().str.strip()
     municipios_gdf['Depto'] = municipios_gdf['Depto'].str.upper().str.strip()
-    
+   
     return df
 
 df = cargar_base_datos()
@@ -64,55 +84,47 @@ app = Dash(__name__, title="Dashboard de Proyectos Fundación AIP", suppress_cal
 
 # 2. Esquema de colores mejorado con gamas ordenadas
 colors = {
-    'background': '#e8f5e9',  # Cambiado a un verde claro moderno (antes #1a2f1a)
-    'text': '#333333',  # Cambiado a un gris oscuro para mejor contraste
+    'background': '#e8f5e9',
+    'text': '#333333',
     'primary': '#2e5d2e',
     'secondary': '#4a7c4a',
     'accent': '#8b5a2b',
-    'panel-general': 'rgba(72, 139, 72, 0.8)',  # Verde más claro
-    'panel-especifico': 'rgba(102, 187, 106, 0.8)',  # Verde más claro y moderno
+    'panel-general': 'rgba(72, 139, 72, 0.8)',
+    'panel-especifico': 'rgba(102, 187, 106, 0.8)',
     'panel-municipios': 'rgba(139, 90, 43, 0.8)',
-    'title-color': '#2e7d32',  # Verde más oscuro para títulos
-    'value-color': '#333333',  # Cambiado a gris oscuro
+    'title-color': '#2e7d32',
+    'value-color': '#333333',
     'text-color': '#333333',
-    'card-border': '#a5d6a7',  # Verde claro para bordes
-    'hover-color': '#81c784',  # Verde claro para hover
+    'card-border': '#a5d6a7',
+    'hover-color': '#81c784',
     'selected-color': '#8B0000',
-    'border-color': '#a5d6a7',  # Verde claro para bordes
-    'filter-bg': 'rgba(233, 245, 233, 0.9)',  # Fondo de filtros más claro
+    'border-color': '#a5d6a7',
+    'filter-bg': 'rgba(233, 245, 233, 0.9)',
     'slider-track': '#81c784',
     'slider-handle': '#8b5a2b',
-    
-    # Nuevo color para textos destacados (verde amarillento)
-   'verde-amarillento': '#CDDC39',  # Verde limón - Material Design "Lime 500"
-   'verde-amarillento-oscuro': '#AFB42B',  # Para hover/states
-    
-    # Gama de azules CLAROS ordenados (del más oscuro al más claro):
-    'panel-azul-1': 'rgba(79, 195, 247, 0.8)',   # Azul claro intenso - #4FC3F7
-    'panel-azul-2': 'rgba(129, 212, 250, 0.8)',  # Azul cielo medio - #81D4FA
-    'panel-azul-3': 'rgba(179, 229, 252, 0.8)',  # Azul cielo claro - #B3E5FC
-    'panel-azul-4': 'rgba(207, 239, 253, 0.8)',  # Azul nieve - #CFEFFD
-    
-    
-    # Gama de VER (conservando la progresión original pero más luminosa)
-    'panel-verde-cana-1': 'rgba(100, 120, 60, 0.8)',    # Verde caña oscuro (#64783C)
-    'panel-verde-cana-2': 'rgba(120, 140, 80, 0.8)',    # Verde caña medio (#788C50)
-    'panel-verde-cana-3': 'rgba(140, 160, 95, 0.8)',    # Verde caña (#8CA05F)
-    'panel-verde-cana-4': 'rgba(160, 180, 110, 0.8)',   # Verde caña claro (#A0B46E)
-    'panel-verde-cana-5': 'rgba(180, 200, 130, 0.8)',   # Verde caña luminoso (#B4C882)
-    'panel-verde-cana-6': 'rgba(200, 220, 160, 0.8)',   # Verde caña claro (#DCE8A0)
-    
-    'card-bg': 'rgba(255, 255, 255, 0.9)',  # Fondo de tarjetas blanco
+    'verde-amarillento': '#CDDC39',
+    'verde-amarillento-oscuro': '#AFB42B',
+    'panel-azul-1': 'rgba(79, 195, 247, 0.8)',
+    'panel-azul-2': 'rgba(129, 212, 250, 0.8)',
+    'panel-azul-3': 'rgba(179, 229, 252, 0.8)',
+    'panel-azul-4': 'rgba(207, 239, 253, 0.8)',
+    'panel-verde-cana-1': 'rgba(100, 120, 60, 0.8)',
+    'panel-verde-cana-2': 'rgba(120, 140, 80, 0.8)',
+    'panel-verde-cana-3': 'rgba(140, 160, 95, 0.8)',
+    'panel-verde-cana-4': 'rgba(160, 180, 110, 0.8)',
+    'panel-verde-cana-5': 'rgba(180, 200, 130, 0.8)',
+    'panel-verde-cana-6': 'rgba(200, 220, 160, 0.8)',
+    'card-bg': 'rgba(255, 255, 255, 0.9)',
     'selected-card-bg': '#8B0000',
     'map-highlight': '#8B0000',
-    'positive-accent': '#4caf50',  # Verde más moderno
+    'positive-accent': '#4caf50',
     'negative-accent': '#8b5a2b',
-    'photo-panel': 'rgba(233, 245, 233, 0.9)',  # Fondo más claro
+    'photo-panel': 'rgba(233, 245, 233, 0.9)',
     'modal-bg': 'rgba(0,0,0,0.85)',
     'aip-locations': '#FFA500'
 }
 
-# 3. Estilos optimizados con tamaños de fuente aumentados
+# 3. Estilos optimizados
 styles = {
     'container': {
         'display': 'grid',
@@ -130,11 +142,13 @@ styles = {
         'color': colors['title-color'],
         'marginBottom': '0',
         'fontWeight': '700',
-        'fontSize': '42px',  # Aumentado de 36px
+        'fontSize': '52px',
         'paddingBottom': '15px',
         'textShadow': '2px 2px 4px rgba(0,0,0,0.5)',
         'borderBottom': f'2px solid {colors["title-color"]}',
-        'marginLeft': '20px'
+        'marginLeft': '20px',
+        'display': 'inline-block',
+        'verticalAlign': 'middle'
     },
     'header-container': {
         'gridColumn': '1 / span 2',
@@ -156,13 +170,19 @@ styles = {
         'objectFit': 'contain',
         'maxWidth': '100%'
     },
+    'huella-img': {
+        'height': '150px',
+        'verticalAlign': 'middle',
+        'marginLeft': '15px',
+        'marginBottom': '5px'
+    },
     'section-title': {
         'gridColumn': '1 / span 2',
         'textAlign': 'left',
         'color': colors['title-color'],
         'margin': '15px 0 10px 0',
         'fontWeight': '600',
-        'fontSize': '30px',  # Aumentado de 24px
+        'fontSize': '30px',
         'paddingLeft': '15px',
         'borderLeft': f'4px solid {colors["title-color"]}',
         'backgroundColor': 'rgba(0,0,0,0.2)',
@@ -226,7 +246,7 @@ styles = {
     },
     'municipio-name': {
         'fontWeight': '600',
-        'fontSize': '24px',  # Aumentado de 20px
+        'fontSize': '24px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'color': '#333333',
@@ -234,7 +254,7 @@ styles = {
     },
     'municipio-name-selected': {
         'fontWeight': '600',
-        'fontSize': '26px',  # Aumentado de 22px
+        'fontSize': '26px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'color': 'white',
@@ -242,7 +262,7 @@ styles = {
         'textShadow': '1px 1px 3px rgba(0,0,0,0.7)'
     },
     'municipio-projects': {
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'fontWeight': '600',
         'textAlign': 'center',
         'backgroundColor': '#e6f3ff',
@@ -253,7 +273,7 @@ styles = {
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)'
     },
     'municipio-projects-selected': {
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'fontWeight': '600',
         'textAlign': 'center',
         'backgroundColor': 'rgba(255,255,255,0.3)',
@@ -268,7 +288,7 @@ styles = {
         'textAlign': 'center',
         'color': 'white',
         'fontWeight': '600',
-        'fontSize': '28px',  # Aumentado de 24px
+        'fontSize': '28px',
         'marginBottom': '20px',
         'padding': '12px',
         'borderRadius': '6px',
@@ -303,7 +323,7 @@ styles = {
         'minHeight': '130px'
     },
     'info-title': {
-        'fontSize': '24px',  # Aumentado de 18px
+        'fontSize': '24px',
         'fontWeight': '600',
         'color': colors['title-color'],
         'marginBottom': '12px',
@@ -315,7 +335,7 @@ styles = {
         'textShadow': '1px 1px 2px rgba(0,0,0,0.5)'
     },
     'info-value': {
-        'fontSize': '36px',  # Aumentado de 28px
+        'fontSize': '36px',
         'fontWeight': '600',
         'color': colors['value-color'],
         'margin': 'auto 0',
@@ -327,7 +347,7 @@ styles = {
         'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
     },
     'info-text': {
-        'fontSize': '30px',  # Aumentado de 24px
+        'fontSize': '30px',
         'fontWeight': '600',
         'color': colors['value-color'],
         'margin': 'auto 0',
@@ -343,14 +363,14 @@ styles = {
         'fontWeight': '600',
         'marginBottom': '10px',
         'color': colors['title-color'],
-        'fontSize': '22px',  # Aumentado de 18px
+        'fontSize': '22px',
         'textShadow': '1px 1px 1px rgba(0,0,0,0.3)'
     },
     'dropdown': {
         'width': '100%',
         'borderRadius': '6px',
         'border': f'1px solid {colors["border-color"]}',
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'backgroundColor': 'white',
         'color': '#333333'
     },
@@ -377,14 +397,14 @@ styles = {
         'border': f'2px solid {colors["selected-color"]}'
     },
     'kpi-title': {
-        'fontSize': '26px',  # Aumentado de 20px
+        'fontSize': '26px',
         'marginBottom': '12px',
         'color': colors['title-color'],
         'fontWeight': '600',
         'textShadow': '1px 1px 2px rgba(0,0,0,0.3)'
     },
     'kpi-value': {
-        'fontSize': '48px',  # Aumentado de 38px
+        'fontSize': '48px',
         'fontWeight': '700',
         'color': colors['value-color'],
         'marginTop': '8px',
@@ -428,7 +448,7 @@ styles = {
         'textAlign': 'center',
         'color': colors['title-color'],
         'fontWeight': '600',
-        'fontSize': '26px',  # Aumentado de 20px
+        'fontSize': '26px',
         'marginBottom': '8px',
         'textTransform': 'uppercase'
     },
@@ -438,7 +458,7 @@ styles = {
         'borderRadius': '6px',
         'backgroundColor': colors['filter-bg'],
         'color': colors['text'],
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'border': f'1px solid {colors["border-color"]}'
     },
     'photo-button-container': {
@@ -457,7 +477,7 @@ styles = {
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
-        'fontSize': '18px',  # Aumentado de 14px
+        'fontSize': '18px',
         'margin': '4px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)',
         'transition': 'all 0.3s ease'
@@ -506,19 +526,19 @@ styles = {
         'fontWeight': '600',
         'border': 'none',
         'cursor': 'pointer',
-        'fontSize': '18px',  # Aumentado de 14px
+        'fontSize': '18px',
         'boxShadow': '0 2px 4px rgba(0,0,0,0.15)'
     },
     'proyecto-selector-label': {
         'color': colors['text'],
-        'fontSize': '20px',  # Aumentado de 16px
+        'fontSize': '20px',
         'marginBottom': '8px',
         'textAlign': 'center',
         'fontWeight': '600'
     }
 }
 
-# 4. Layout de la aplicación (sin cambios en la estructura, solo tamaños de fuente aumentados)
+# 4. Layout de la aplicación
 app.layout = html.Div(style={
     'backgroundColor': colors['background'],
     'minHeight': '100vh',
@@ -526,10 +546,20 @@ app.layout = html.Div(style={
     'margin': '0'
 }, children=[
     html.Div(style=styles['container'], children=[
-        # Encabezado con título y logo
+        # Encabezado con título, huella y logo
         html.Div(style=styles['header-container'], children=[
             html.Div(
-                html.H1("NUESTRA HUELLA EN COLOMBIA", style=styles['header']),
+                html.Div([
+                    html.Span("NUESTRA HUELLA EN COLOMBIA ", style=styles['header']),
+                    html.Img(
+                        src=huella_encoded,
+                        style=styles['huella-img']
+                    ) if huella_encoded else html.Div()
+                ], style={
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'flexWrap': 'wrap'
+                }),
             ),
             html.Div(style=styles['logo-container'], children=[
                 html.Img(
@@ -538,7 +568,7 @@ app.layout = html.Div(style={
                 ) if logo_encoded else html.Div("Logo no encontrado")
             ])
         ]),
-        
+       
         # Fila 1: Filtros
         html.Div(style=styles['filters'], children=[
             html.Div(style={'display': 'grid', 'gridTemplateColumns': 'repeat(4, 1fr)', 'gap': '15px'}, children=[
@@ -579,7 +609,7 @@ app.layout = html.Div(style={
                         min=0,
                         max=7000,
                         value=[0, 7000],
-                        marks={i: {'label': f"{i}", 'style': {'fontSize': '18px', 'color': colors['text']}} 
+                        marks={i: {'label': f"{i}", 'style': {'fontSize': '18px', 'color': colors['text']}}
                                for i in range(0, 7001, 1000)},
                         step=50,
                         tooltip={
@@ -602,7 +632,7 @@ app.layout = html.Div(style={
                     min=df['Fecha inicio'].dt.year.min(),
                     max=df['Fecha inicio'].dt.year.max(),
                     value=[df['Fecha inicio'].dt.year.min(), df['Fecha inicio'].dt.year.max()],
-                    marks={str(year): {'label': str(year), 'style': {'fontSize': '18px', 'color': colors['text']}} 
+                    marks={str(year): {'label': str(year), 'style': {'fontSize': '18px', 'color': colors['text']}}
                            for year in range(df['Fecha inicio'].dt.year.min(), df['Fecha inicio'].dt.year.max()+1)},
                     step=None,
                     tooltip={
@@ -618,10 +648,10 @@ app.layout = html.Div(style={
                 )
             ])
         ]),
-        
+       
         # Título sección general
         html.Div("INFORMACIÓN GENERAL DE LOS PROYECTOS", style=styles['section-title']),
-        
+       
         # Fila 2: KPIs con gama ordenada de azules
         html.Div(style=styles['summary'], children=[
             html.Div(style={'display': 'grid', 'gridTemplateColumns': 'repeat(4, 1fr)', 'gap': '15px', 'height': '100%'}, children=[
@@ -643,10 +673,10 @@ app.layout = html.Div(style={
                 ])
             ])
         ]),
-        
+       
         # Título sección específica
         html.Div("INFORMACIÓN ESPECÍFICA DE LOS PROYECTOS POR MUNICIPIO", style=styles['section-title']),
-        
+       
         # Fila 3: Mapa y Lista de Municipios
         html.Div(style=styles['map-container'], children=[
             html.Div(id='map-title', children=[
@@ -661,7 +691,7 @@ app.layout = html.Div(style={
                 'borderRadius': '12px 12px 0 0'
             }),
             dcc.Graph(
-                id='mapa', 
+                id='mapa',
                 config={'displayModeBar': False},
                 style={'height': '540px'},
                 clickData=None
@@ -671,7 +701,7 @@ app.layout = html.Div(style={
             html.Div(id='arrow-3', style=styles['arrow']),
             html.Div(id='arrow-4', style=styles['arrow'])
         ]),
-        
+       
         html.Div(style=styles['municipios-list'], children=[
             html.Div("MUNICIPIOS CON PROYECTOS", style=styles['municipios-title']),
             html.Div(id='municipios-cards-container', style={
@@ -681,12 +711,12 @@ app.layout = html.Div(style={
                 'padding': '8px',
             })
         ]),
-        
+       
         # Fila 4: Panel de información con gama ordenada de café
         html.Div(style=styles['info-panel'], children=[
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                            'backgroundColor': colors['panel-verde-cana-1'],
-                           'border': f'2px solid {colors["map-highlight"]}'}, 
+                           'border': f'2px solid {colors["map-highlight"]}'},
                 children=[
                     html.Div("📍 MUNICIPIO SELECCIONADO", style=styles['info-title'], ),
                     html.Div(id='municipio-value', style={
@@ -695,9 +725,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                           'backgroundColor': colors['panel-verde-cana-2'],
-                          'border':  f'2px solid #00CED1'}, 
+                          'border':  f'2px solid #00CED1'},
                 children=[
                    html.Div("🏦 ENTIDAD FINANCIADORA", style=styles['info-title']),
                    html.Div(id='financiador-value', style={
@@ -705,9 +735,9 @@ app.layout = html.Div(style={
                        'fontSize': '32px'
                    })
             ]),
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                           'backgroundColor': colors['panel-verde-cana-3'],
-                          'border': f'2px solid #00CED1'}, 
+                          'border': f'2px solid #00CED1'},
                 children=[
                     html.Div("⏳ DURACIÓN (MESES)", style=styles['info-title']),
                     html.Div(id='duracion-value', style={
@@ -715,9 +745,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                           'backgroundColor': colors['panel-verde-cana-4'],
-                          'border':  f'2px solid #00CED1'}, 
+                          'border':  f'2px solid #00CED1'},
                 children=[
                     html.Div("👥 CANTIDAD BENEFICIARIOS", style=styles['info-title']),
                     html.Div(id='beneficiarios-value', style={
@@ -725,9 +755,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                           'backgroundColor': colors['panel-verde-cana-5'],
-                          'border':  f'2px solid #00CED1'}, 
+                          'border':  f'2px solid #00CED1'},
                 children=[
                     html.Div("🌳 HECTÁREAS INTERVENIDAS", style=styles['info-title']),
                     html.Div(id='area-value', style={
@@ -735,9 +765,9 @@ app.layout = html.Div(style={
                         'color': colors['value-color']
                     })
             ]),
-            html.Div(style={**styles['info-section-specific'], 
+            html.Div(style={**styles['info-section-specific'],
                           'backgroundColor': colors['panel-verde-cana-6'],
-                          'border':  f'2px solid #00CED1'}, 
+                          'border':  f'2px solid #00CED1'},
                 children=[
                     html.Div("📦 PRODUCTO PRINCIPAL", style=styles['info-title']),
                     html.Div(id='producto-value', style={
@@ -747,7 +777,7 @@ app.layout = html.Div(style={
                     })
             ])
         ]),
-        
+       
         # Panel para visualización de fotografías
         html.Div(style=styles['photo-panel'], children=[
             # Sección izquierda - Selector de proyectos
@@ -765,14 +795,14 @@ app.layout = html.Div(style={
                     }
                 )
             ]),
-            
+           
             # Sección derecha - Fotografías
             html.Div(style=styles['photo-content'], children=[
                 html.Div("EVIDENCIA FOTOGRÁFICA INICIAL Y FINAL DEL PROYECTO", style=styles['photo-title']),
                 html.Div(id='photo-buttons', style=styles['photo-button-container'])
             ])
         ]),
-        
+       
         # Modal para mostrar las fotografías
         html.Div(id='photo-modal', style={'display': 'none'}, children=[
             html.Div(style=styles['modal'], children=[
@@ -782,7 +812,7 @@ app.layout = html.Div(style={
                 ])
             ])
         ]),
-        
+       
         # Pie de página
         html.Div(style={
             'gridColumn': '1 / span 2',
@@ -796,7 +826,7 @@ app.layout = html.Div(style={
             html.P("© 2025 Fundación AIP - Todos los derechos reservados"),
             html.P("Datos actualizados al " + datetime.now().strftime("%d/%m/%Y"))
         ]),
-        
+       
         # Almacenamiento
         dcc.Store(id='filtered-data', data=None),
         dcc.Store(id='selected-municipio', data=None),
@@ -807,11 +837,11 @@ app.layout = html.Div(style={
 
 # 5. Funciones de callback (sin cambios)
 def get_municipio_bbox(municipio_name, departamento_name):
-    municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) & 
+    municipio = municipios_gdf[(municipios_gdf['MpNombre'] == municipio_name.upper().strip()) &
                               (municipios_gdf['Depto'] == departamento_name.upper().strip())]
     if municipio.empty:
         return None
-    
+   
     bounds = municipio.geometry.bounds
     minx, miny, maxx, maxy = bounds.iloc[0]
     padding = 0.1
@@ -824,7 +854,7 @@ def get_municipio_bbox(municipio_name, departamento_name):
     width = maxx - minx
     height = maxy - miny
     zoom = 8 - max(width, height) * 5
-    
+   
     return {
         'lat': center_lat,
         'lon': center_lon,
@@ -863,21 +893,21 @@ def update_map_title(selected_municipio):
 def update_filtered_data(tipos, departamentos, comunidades, anos, costos, selected_municipio, current_map_center, current_filtered_data):
     ctx = callback_context
     triggered_input = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
-    
+   
     filtered = df[
-        (df['Fecha inicio'].dt.year >= anos[0]) & 
+        (df['Fecha inicio'].dt.year >= anos[0]) &
         (df['Fecha inicio'].dt.year <= anos[1]) &
         (df['Costo total ($COP)'] >= costos[0]*1000000) &
         (df['Costo total ($COP)'] <= costos[1]*1000000)
     ]
-    
+   
     if tipos:
         filtered = filtered[filtered['Tipo de proyecto'].isin(tipos)]
     if departamentos:
         filtered = filtered[filtered['Departamento'].isin(departamentos)]
     if comunidades:
         filtered = filtered[filtered['Comunidad beneficiaria'].isin(comunidades)]
-    
+   
     if filtered.empty:
         fig = px.choropleth_mapbox(
             title="No hay datos que coincidan con los filtros aplicados",
@@ -899,7 +929,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                 font=dict(size=20)
             )]
         )
-        
+       
         return (
             [],
             "0",
@@ -909,7 +939,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             fig,
             {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
         )
-    
+   
     filtered_with_geom = pd.merge(
         filtered,
         municipios_gdf[['MpNombre', 'Depto', 'geometry', 'lon', 'lat']],
@@ -917,9 +947,9 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         right_on=['MpNombre', 'Depto'],
         how='left'
     )
-    
+   
     filtered_gdf = gpd.GeoDataFrame(filtered_with_geom)
-    
+   
     if triggered_input == 'selected-municipio' and selected_municipio and current_filtered_data:
         filtered_df = pd.DataFrame(current_filtered_data)
         municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
@@ -934,9 +964,9 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             map_center = current_map_center
     else:
         map_center = current_map_center if current_map_center else {'lat': 4.6, 'lon': -74.1, 'zoom': 4.5}
-    
+   
     filtered_with_geometry = filtered_gdf[~filtered_gdf.geometry.isna()]
-    
+   
     if filtered_with_geometry.empty:
         fig = px.choropleth_mapbox(
             title="No hay datos geográficos para los filtros aplicados",
@@ -971,12 +1001,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
             opacity=0.8,
             custom_data=['MpNombre', 'Depto', 'Tipo de proyecto', 'ID']
         )
-        
+       
         # Actualizar el hover template para los polígonos (municipios)
         fig.update_traces(
             hovertemplate="<b>Municipio: %{customdata[0]}</b><br>Departamento: %{customdata[1]}<br>Proyecto: %{customdata[2]}<br>ID: %{customdata[3]}<extra></extra>"
         )
-        
+       
         # Agregar puntos de ubicaciones AIP con información de Municipio y Departamento
         fig.add_trace(
             px.scatter_mapbox(
@@ -992,14 +1022,14 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                 showlegend=True  # Asegurar que aparezca en la leyenda
             ).data[0]
         )
-        
+       
         if selected_municipio and current_filtered_data:
             filtered_df = pd.DataFrame(current_filtered_data)
             municipio_data = filtered_df[filtered_df['Municipio'] == selected_municipio]
             if not municipio_data.empty:
                 departamento = municipio_data.iloc[0]['Departamento']
                 selected_municipio_geom = municipios_gdf[
-                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) & 
+                    (municipios_gdf['MpNombre'] == selected_municipio.upper().strip()) &
                     (municipios_gdf['Depto'] == departamento.upper().strip())
                 ]
                 if not selected_municipio_geom.empty:
@@ -1014,7 +1044,7 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
                             hoverinfo='skip'
                         ).data[0]
                     )
-    
+   
     fig.update_layout(
         mapbox_style="carto-positron",
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1030,12 +1060,12 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
         paper_bgcolor='rgba(0,0,0,0)',
         clickmode='event+select'
     )
-    
+   
     total_proyectos = len(filtered)
     total_inversion = f"${filtered['Costo total ($COP)'].sum()/1000000:,.0f}M"
     total_beneficiarios = f"{filtered['Beneficiarios totales'].sum():,}"
     total_area = f"{filtered['Área intervenida (ha)'].sum():,.1f} ha"
-    
+   
     return (
         filtered.to_dict('records'),
         total_proyectos,
@@ -1054,26 +1084,26 @@ def update_filtered_data(tipos, departamentos, comunidades, anos, costos, select
 def update_municipios_list(filtered_data, selected_municipio):
     if not filtered_data:
         return html.Div("No hay municipios con los filtros actuales", style={
-            'textAlign': 'center', 
-            'color': 'white', 
+            'textAlign': 'center',
+            'color': 'white',
             'fontSize': '22px',
             'padding': '15px',
             'backgroundColor': 'rgba(0,0,0,0.2)',
             'borderRadius': '8px'
         })
-    
+   
     filtered_df = pd.DataFrame(filtered_data)
     municipios = filtered_df['Municipio'].unique()
-    
+   
     cards = []
     for municipio in sorted(municipios):
         count = len(filtered_df[filtered_df['Municipio'] == municipio])
         is_selected = municipio == selected_municipio
-        
+       
         card_style = styles['municipio-card-selected'] if is_selected else styles['municipio-card']
         name_style = styles['municipio-name-selected'] if is_selected else styles['municipio-name']
         count_style = styles['municipio-projects-selected'] if is_selected else styles['municipio-projects']
-        
+       
         cards.append(
             html.Div(
                 [
@@ -1085,10 +1115,10 @@ def update_municipios_list(filtered_data, selected_municipio):
                 n_clicks=0
             )
         )
-    
+   
     return cards if cards else html.Div("No hay municipios con los filtros actuales", style={
-        'textAlign': 'center', 
-        'color': 'white', 
+        'textAlign': 'center',
+        'color': 'white',
         'fontSize': '22px',
         'padding': '15px',
         'backgroundColor': 'rgba(0,0,0,0.2)',
@@ -1118,17 +1148,17 @@ def update_municipios_list(filtered_data, selected_municipio):
 )
 def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_data, municipio_ids, municipios_cards):
     ctx = callback_context
-    
+   
     if not ctx.triggered or not filtered_data:
         default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
         return [
-            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
+            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
             default_styles,
             [], None, [], None
         ]
-    
+   
     trigger_id = ctx.triggered[0]['prop_id']
-    
+   
     if trigger_id == 'mapa.clickData':
         if map_click and 'points' in map_click and map_click['points']:
             point = map_click['points'][0]
@@ -1139,7 +1169,7 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
         else:
             default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
             return [
-                None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
+                None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
                 default_styles,
                 [], None, [], None
             ]
@@ -1152,45 +1182,45 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
             raise PreventUpdate
     else:
         municipio = json.loads(trigger_id.split('.')[0].replace("'", '"'))['index']
-    
+   
     filtered_df = pd.DataFrame(filtered_data)
     municipio_data = filtered_df[filtered_df['Municipio'] == municipio]
-    
+   
     if trigger_id == 'proyecto-selector.value' and selected_proyecto:
         proyecto_data = municipio_data[municipio_data['ID'] == selected_proyecto].iloc[0]
     else:
         proyecto_data = municipio_data.iloc[0] if not municipio_data.empty else None
         selected_proyecto = proyecto_data['ID'] if proyecto_data is not None else None
-    
+   
     if proyecto_data is None:
         default_styles = [styles['municipio-card'] for _ in municipio_ids] if municipio_ids else []
         return [
-            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A", 
+            None, "Seleccione un municipio", "0", "N/A", "0", "0", "N/A",
             default_styles,
             [], None, [], None
         ]
-    
+   
     beneficiarios = proyecto_data['Beneficiarios totales']
     financiador = proyecto_data['Entidad financiadora']
     duracion = f"{proyecto_data['Duración del proyecto (meses)']:.1f}"
     area = f"{proyecto_data['Área intervenida (ha)']:,.1f}"
     producto = proyecto_data['Producto principal generado']
-    
+   
     card_styles = []
     for m_id in municipio_ids:
         if m_id['index'] == municipio:
             card_styles.append(styles['municipio-card-selected'])
         else:
             card_styles.append(styles['municipio-card'])
-    
-    proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']} 
+   
+    proyectos_options = [{'label': f"Proyecto {row['ID']} - {row['Tipo de proyecto']}", 'value': row['ID']}
                         for _, row in municipio_data.iterrows()]
-    
+   
     foto_data = []
     buttons = []
     if selected_proyecto:
         for i in [1, 2]:
-            foto_path = f"F:/dashboard-aip/assets/fotos/Rf {i} proyecto {selected_proyecto}.jpg"
+            foto_path = f"assets/fotos/Rf {i} proyecto {selected_proyecto}.jpg"
             if os.path.exists(foto_path):
                 encoded_image = encode_image(foto_path)
                 foto_data.append({
@@ -1205,26 +1235,21 @@ def handle_municipio_selection(clicks, map_click, selected_proyecto, filtered_da
                         style=styles['photo-button']
                     )
                 )
-    
+   
     return [
-        municipio, 
-        municipio, 
-        f"{beneficiarios:,}", 
-        financiador, 
-        duracion, 
-        area, 
-        producto, 
+        municipio,
+        municipio,
+        f"{beneficiarios:,}",
+        financiador,
+        duracion,
+        area,
+        producto,
         card_styles,
         proyectos_options,
         selected_proyecto,
         buttons,
         foto_data
     ]
-
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-    return f"data:image/jpeg;base64,{encoded_string}"
 
 @app.callback(
     Output('photo-modal', 'style'),
@@ -1237,20 +1262,20 @@ def toggle_modal(photo_clicks, close_click, foto_data):
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
-    
+   
     trigger_id = ctx.triggered[0]['prop_id']
-    
+   
     if 'close-modal' in trigger_id:
         return {'display': 'none'}
-    
+   
     if foto_data and any(photo_clicks):
         button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
         photo_num = button_id['index']
-        
+       
         for foto in foto_data:
             if foto['photo_num'] == photo_num:
                 return {'display': 'flex'}
-    
+   
     return {'display': 'none'}
 
 @app.callback(
@@ -1263,18 +1288,16 @@ def update_modal_image(photo_clicks, foto_data):
     ctx = callback_context
     if not ctx.triggered or not foto_data:
         raise PreventUpdate
-    
+   
     button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
     photo_num = button_id['index']
-    
+   
     for foto in foto_data:
         if foto['photo_num'] == photo_num:
             return foto['image']
-    
+   
     raise PreventUpdate
 
 # 6. Ejecutar la aplicación
-server = app.server
 if __name__ == '__main__':
-    print("\n✅ Dashboard listo! Accede en: http://127.0.0.1:8050\n")
-    app.run(debug=True, dev_tools_ui=False)
+    app.run_server(host='0.0.0.0', port=8050, debug=False)
